@@ -1,0 +1,33 @@
+import pandas as pd
+import requests
+import time
+
+# Función para obtener coordenadas de OpenStreetMap
+def obtener_coordenadas_osm(lugar):
+    url = f"https://nominatim.openstreetmap.org/search?q={lugar}&format=json&limit=1"
+    headers = {"User-Agent": "Mozilla/5.0"}  # Algunos servidores bloquean peticiones sin User-Agent
+
+    response = requests.get(url, headers=headers)
+    
+    if response.status_code == 200 and response.json():
+        data = response.json()[0]
+        return data["lat"], data["lon"]
+    
+    return None, None  # Si no encuentra resultados
+
+# Cargar el archivo CSV
+df = pd.read_csv('Prueba_sacar.csv')
+
+# Iterar sobre cada lugar en el CSV
+for index, row in df.iterrows():
+    lugar = row['Hospital']  # Cambia esto si tu columna tiene otro nombre
+    lat, lon = obtener_coordenadas_osm(lugar)
+    df.at[index, 'Latitud'] = lat
+    df.at[index, 'Longitud'] = lon
+    print(f"{lugar} -> Lat: {lat}, Lon: {lon}")  # Mostrar progreso
+    time.sleep(0.3)  # Esperar 0.3 segundo entre peticiones para evitar bloqueo
+
+# Guardar el CSV actualizado
+df.to_csv('lugares_con_coordenadas.csv', index=False, encoding="utf-8-sig")
+
+print("Proceso completado y CSV actualizado.")

@@ -1,0 +1,45 @@
+import requests
+import pandas as pd
+
+# Función para obtener paradas de Cercanías y metro en una ciudad
+def obtener_paradas_osm(ciudad):
+    query = f"""
+    [out:json];
+    area["name"="{ciudad}"]->.searchArea;
+    (
+      node["railway"="station"]["network"="Cercanías Madrid"](area.searchArea);
+      node["railway"="station"]["network"="Metro de Madrid"](area.searchArea);
+    );
+    out body;
+    """
+    
+    url = "http://overpass-api.de/api/interpreter"
+    response = requests.get(url, params={'data': query})
+    
+    if response.status_code == 200:
+        datos = response.json()
+        estaciones = []
+        
+        for elemento in datos['elements']:
+            if "lat" in elemento and "lon" in elemento:
+                nombre = elemento.get("tags", {}).get("name", "Desconocido")
+                lat = elemento["lat"]
+                lon = elemento["lon"]
+                estaciones.append([nombre, lat, lon])
+        
+        return estaciones
+    else:
+        print("Error en la API")
+        return []
+
+# Nombre de la ciudad donde buscar estaciones
+ciudad = "Madrid"
+
+# Obtener estaciones de Cercanías y Metro
+paradas = obtener_paradas_osm(ciudad)
+
+# Guardar resultados en un CSV con codificación UTF-8-SIG
+df = pd.DataFrame(paradas, columns=["Nombre", "Latitud", "Longitud"])
+df.to_csv("paradas_cercanias_metro.csv", index=False, encoding="utf-8-sig")
+
+print("Proceso completado. Paradas guardadas en 'paradas_cercanias_metro.csv'.")
