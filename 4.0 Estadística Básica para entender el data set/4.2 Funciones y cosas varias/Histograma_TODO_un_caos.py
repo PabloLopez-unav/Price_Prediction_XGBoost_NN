@@ -162,67 +162,39 @@ class MadridPropertyAnalyzer:
         plt.savefig(f'{output_dir}/correlation_heatmap.png')
         plt.close()
 
-    def plot_histogram(self, output_dir, features, bins=50, figsize=(20, 5), title=None):
+    def plot_histogram(self, feature, bins=30, figsize=(10, 6), title=None):
         """
-        Plot histograms for selected numeric features in the dataset.
+        Plot histogram of a specific feature in the dataset
         
         Parameters:
         -----------
-        features : list of str
-            List of column names to plot.
-        bins : int, default=50
-            Number of bins for each histogram.
-        figsize : tuple, default=(20, 5)
-            Base size for each row of histograms (width, height).
+        feature : str
+            Column name of the feature to plot
+        bins : int, default=30
+            Number of bins for the histogram
+        figsize : tuple, default=(10, 6)
+            Figure size (width, height) in inches
         title : str, optional
-            Title for the full figure. If None, no main title is set.
+            Custom title for the plot. If None, a default title will be used
         """
-        import matplotlib.pyplot as plt
-        import numpy as np
-
-        print("\nGenerating visualizations...")
-
-        # Check if features exist in the DataFrame
-        missing = [col for col in features if col not in self.df.columns]
-        if missing:
-            print(f"Warning: These features were not found in the dataset: {', '.join(missing)}")
-            features = [col for col in features if col in self.df.columns]
-
-        if not features:
-            print("No valid features provided for plotting.")
+        if feature not in self.df.columns:
+            print(f"Feature '{feature}' not found in the dataset.")
+            print(f"Available features: {', '.join(self.df.columns)}")
             return
-
-        # Calculate grid size
-        n_cols = 4
-        n_rows = (len(features) + n_cols - 1) // n_cols
-
-        fig, axes = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(figsize[0], figsize[1]*n_rows))
-        fig.tight_layout(pad=3.0)
-        axes = axes.flatten()
-
-        # Plot each selected feature
-        for i, col in enumerate(features):
-            self.df[col].dropna().hist(bins=bins, 
-                                    ax=axes[i], 
-                                    alpha=0.7, 
-                                    color='skyblue', 
-                                    edgecolor='black')
-            axes[i].set_title(f'Distribution of {col}', fontsize=10)
-            axes[i].set_xlabel(col, fontsize=8)
-            axes[i].grid(alpha=0.3)
-
-        # Turn off unused subplots
-        for j in range(len(features), len(axes)):
-            axes[j].axis('off')
-
-        if title:
-            fig.suptitle(title, fontsize=16)
-            plt.subplots_adjust(top=0.95)
-
+        
+        plt.figure(figsize=figsize)
+        plt.hist(self.df[feature].dropna(), bins=bins, alpha=0.7, color='skyblue', edgecolor='black')
+        
+        # Set plot title
+        if title is None:
+            title = f'Histogram of {feature}'
+        plt.title(title, fontsize=14)
+        
+        plt.xlabel(feature, fontsize=12)
+        plt.ylabel('Frequency', fontsize=12)
+        plt.grid(alpha=0.3)
+        plt.tight_layout()
         plt.show()
-        plt.savefig(f'{output_dir}/correlation_heatmap.png')
-
-
 
 # Example usage
 def main():
@@ -256,11 +228,41 @@ def main():
     for amenity, percentage in amenities.items():
         print(f"{amenity.replace('_', ' ').title()}: {percentage:.2f}%")
 
-    print(analyzer.self.head())
+    # After all printing is done, execute the visualization functions
+    print("\nGenerating visualizations...")
 
-    # Generate histrograms for selected features
-    print("\nGenerating histograms...")
-    analyzer.plot_histogram(features=['price', 'surface_total', 'rooms'])
+    # Get all numeric columns for histograms
+    numeric_cols = analyzer.df.select_dtypes(include=[np.number]).columns.tolist()
+
+    # Calculate number of rows needed (4 columns)
+    n_rows = (len(numeric_cols) + 3) // 4  # Redondeo hacia arriba
+
+    # Create figure with grid of subplots (4 columns)
+    fig, axes = plt.subplots(nrows=n_rows, ncols=4, figsize=(20, 5*n_rows))
+    fig.tight_layout(pad=3.0)
+
+    # Plot histogram for each numeric feature
+    for i, col in enumerate(numeric_cols):
+        row_idx = i // 4
+        col_idx = i % 4
+        analyzer.df[col].hist(bins=50, 
+                            ax=axes[row_idx, col_idx],  # Acceso correcto al subplot
+                            alpha=0.7, 
+                            color='skyblue', 
+                            edgecolor='black')
+        axes[row_idx, col_idx].set_title(f'Distribution of {col}', fontsize=10)
+        axes[row_idx, col_idx].set_xlabel(col, fontsize=8)
+        axes[row_idx, col_idx].grid(alpha=0.3)
+
+    # Hide empty subplots if any
+    for j in range(len(numeric_cols), n_rows*4):
+        row_idx = j // 4
+        col_idx = j % 4
+        axes[row_idx, col_idx].axis('off')
+
+    plt.show()
+    plt.savefig(f'{output_dir}/historigrama_de_todo.png')
+
 
     # Generate advanced visualizations
     analyzer.generate_advanced_visualizations(output_dir)
