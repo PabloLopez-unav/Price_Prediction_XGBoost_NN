@@ -164,10 +164,6 @@ class MadridPropertyAnalyzer:
 
     def plot_histogram(self, output_dir, features, bins=50, figsize=(20, 5), title=None):
         """
-        Plot histograms for selected numeric features in the dataset.
-        
-        Parameters:
-        -----------
         features : list of str
             List of column names to plot.
         bins : int, default=50
@@ -220,7 +216,13 @@ class MadridPropertyAnalyzer:
             plt.subplots_adjust(top=0.95)
 
         plt.show()
-        plt.savefig(f'{output_dir}/correlation_heatmap.png')
+        plt.savefig(f'{output_dir}/Neat_Histogram.png')
+
+    def printHead(self):
+        """
+        Print the first few rows of the dataset for quick inspection
+        """
+        print(self.df.head(1))
 
 
 
@@ -256,11 +258,12 @@ def main():
     for amenity, percentage in amenities.items():
         print(f"{amenity.replace('_', ' ').title()}: {percentage:.2f}%")
 
-    print(analyzer.self.head())
 
     # Generate histrograms for selected features
     print("\nGenerating histograms...")
-    analyzer.plot_histogram(features=['price', 'surface_total', 'rooms'])
+    analyzer.plot_histogram(output_dir, features = ["PRICE", "CONSTRUCTEDAREA", "ROOMNUMBER", "BATHNUMBER", 
+    "CONSTRUCTIONYEAR", "CADCONSTRUCTIONYEAR", "DISTANCE_TO_CITY_CENTER", 
+    "DISTANCE_TO_METRO", "DISTANCE_TO_CASTELLANA", "LONGITUDE", "LATITUDE"], )
 
     # Generate advanced visualizations
     analyzer.generate_advanced_visualizations(output_dir)
