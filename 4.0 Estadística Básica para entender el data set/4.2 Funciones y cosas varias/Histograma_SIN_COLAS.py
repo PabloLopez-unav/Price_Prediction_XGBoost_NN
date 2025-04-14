@@ -130,7 +130,8 @@ def main():
 
     analyzer = MadridPropertyAnalyzer(file_path)
 
-    analyzer_NO_TAILS = analyzer.filter_tails(features, percent=0.975)
+    analyzer_NO_TAILS = analyzer.filter_tails(features, percent=0.995)
+    analyzer_NO_TAILS.df.to_csv(r'C:\Users\costa\Desktop\TFG\4.0 Estadística Básica para entender el data set\4.2 Funciones y cosas varias\filtered_dataset_NO_TAILS.csv', index=False)
     
     # Print key insights
     print("--- Madrid Property Market Analysis ---")
