@@ -8,7 +8,7 @@ import joblib
 print("Modelo guardado correctamente.")
 
 # 1. Cargar los datos
-data = pd.read_csv("Madrid_Sale.csv")  # Cambia "datos.csv" por la ruta real
+data = pd.read_csv(r"6.0 XGBoost primero con CSV sin añadir nada ni tocar nada\Madrid_Sale.csv")  # Cambia "datos.csv" por la ruta real
 
 data = data.drop(columns=['ASSETID', 'PERIOD', 'UNITPRICE', 'CONSTRUCTIONYEAR', 'CADASTRALQUALITYID' ,'geometry'])
 
@@ -73,12 +73,12 @@ df_resultados = pd.DataFrame({'y_valid': y_valid, 'y_pred': y_pred})
 print(f"La media de precio de los pisos es de {y_pred.mean()}")
 
 # Guardar en un archivo CSV
-df_resultados.to_csv('resultados_xgboost_60per_NO_CATASQUAL.csv', index=False)
+df_resultados.to_csv(r'6.0 XGBoost primero con CSV sin añadir nada ni tocar nada\Mresultados_xgboost_60per_NO_CATASQUAL.csv', index=False)
 
 print("Archivo 'resultados_xgboost.csv' generado correctamente.")
 
 
 # 8. Guardar el modelo en un archivo
 # Guardar el modelo en un archivo
-joblib.dump(model, "modelo_xgboost_60per_NO_CATASQUAL.pkl")
+joblib.dump(model, r"6.0 XGBoost primero con CSV sin añadir nada ni tocar nada\Mmodelo_xgboost_60per_NO_CATASQUAL.pkl")
 
