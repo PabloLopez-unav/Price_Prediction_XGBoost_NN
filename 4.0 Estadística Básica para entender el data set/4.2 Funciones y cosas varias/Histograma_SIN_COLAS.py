@@ -83,7 +83,7 @@ class MadridPropertyAnalyzer:
         plt.show(block=False)
 
 
-    def filter_tails(self, features, percent=0.9):
+    def filter_tails(self, features, features2, percent=0.9):
         """
         Parameters:
         -----------
@@ -108,6 +108,17 @@ class MadridPropertyAnalyzer:
             upper = df_filtered[col].quantile(1 - tail)
             df_filtered = df_filtered[(df_filtered[col] >= lower) & (df_filtered[col] <= upper)]
 
+        for col in features2:
+            if col not in df_filtered.columns:
+                print(f"Warning: Column '{col}' not found.")
+                continue
+            if not np.issubdtype(df_filtered[col].dtype, np.number):
+                print(f"Warning: Column '{col}' is not numeric.")
+                continue
+
+            upper = df_filtered[col].quantile(1 - tail)
+            df_filtered = df_filtered[(df_filtered[col] <= upper)]
+
         # Create a new instance of MadridPropertyAnalyzer with the filtered data
         new_analyzer = MadridPropertyAnalyzer.__new__(MadridPropertyAnalyzer)  # Create an instance manually
         new_analyzer.df = df_filtered  # Assign the filtered DataFrame
@@ -125,12 +136,17 @@ class MadridPropertyAnalyzer:
 def main():
     file_path = (r"C:\Users\costa\Desktop\TFG\4.0 Estadística Básica para entender el data set\4.2 Funciones y cosas varias\Madrid_Sale.csv")
     output_dir = (r"4.0 Estadística Básica para entender el data set\4.2 Funciones y cosas varias\figures")
+
+    features_both = ["CONSTRUCTIONYEAR", "CADCONSTRUCTIONYEAR", "LONGITUDE", "LATITUDE"]
+
+    features2_high = ["PRICE", "CONSTRUCTEDAREA", "ROOMNUMBER", "BATHNUMBER", "DISTANCE_TO_CITY_CENTER", "DISTANCE_TO_METRO", "DISTANCE_TO_CASTELLANA"]
+    
     features = ["PRICE", "CONSTRUCTEDAREA", "ROOMNUMBER", "BATHNUMBER", "CONSTRUCTIONYEAR", "CADCONSTRUCTIONYEAR", "DISTANCE_TO_CITY_CENTER", 
     "DISTANCE_TO_METRO", "DISTANCE_TO_CASTELLANA", "LONGITUDE", "LATITUDE"]
-
+    
     analyzer = MadridPropertyAnalyzer(file_path)
 
-    analyzer_NO_TAILS = analyzer.filter_tails(features, percent=0.995)
+    analyzer_NO_TAILS = analyzer.filter_tails(features_both, features2_high, percent=0.991)
     analyzer_NO_TAILS.df.to_csv(r'C:\Users\costa\Desktop\TFG\4.0 Estadística Básica para entender el data set\4.2 Funciones y cosas varias\filtered_dataset_NO_TAILS.csv', index=False)
     
     # Print key insights
