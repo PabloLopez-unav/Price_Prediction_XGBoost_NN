@@ -145,7 +145,7 @@ shap_values = explainer(caso_features)  # Esto devuelve un objeto Explanation
 
 # 11.5. Visualización Waterfall plot CORRECTA
 plt.figure()
-shap.plots.waterfall(shap_values[0], max_display=15, show=False)
+shap.plots.waterfall(shap_values[0], max_display=25, show=False)
 plt.savefig(r'6.5 XGBoost con Datos Filtrados\waterfall_HighError.png', 
             bbox_inches='tight', dpi=300)
 plt.close()

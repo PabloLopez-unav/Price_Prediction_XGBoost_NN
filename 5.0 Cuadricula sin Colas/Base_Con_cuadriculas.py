@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-def generate_grid_zone(input_file, output_file, grid_size=50):
+def generate_grid_zone(input_file, output_file, grid_size=60):
     # Leer el archivo CSV original
     df = pd.read_csv(input_file)
 
@@ -51,6 +51,10 @@ def create_heatmaps(df, grid_size, save_path=None):
         density_matrix[y, x] = len(zone_data)
         price_matrix[y, x] = zone_data['PRICE'].mean() if not zone_data.empty else 0
         price_m2_matrix[y, x] = zone_data['UNITPRICE'].mean() if not zone_data.empty else 0
+    
+    #Precio medio m2 total
+    price_m2_total = df['UNITPRICE'].mean()
+    print(f"Precio medio por m2 total: {price_m2_total:.2f} €")
     
     # Heatmap de densidad
     plt.figure(figsize=(10, 8))
@@ -107,7 +111,7 @@ if __name__ == "__main__":
     output_file = r"C:\Users\costa\Desktop\TFG\5.0 Cuadricula sin Colas\Dataset_Con_Filtrado_y_Cuadrículas.csv"
     heatmaps_base_path = r"C:\Users\costa\Desktop\TFG\5.0 Cuadricula sin Colas\heatmap"
 
-    grid_size = 50 
+    grid_size = 60 
 
     # 1. Generar las zonas de cuadrícula
     df_with_grid = generate_grid_zone(input_file, output_file, grid_size)
