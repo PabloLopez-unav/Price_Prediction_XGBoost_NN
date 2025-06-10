@@ -1,0 +1,2457 @@
+Directory structure:
+└── pablolopez-unav-tfg/
+    ├── README.md
+    ├── 1.0 Bajar datos en R y convertirlos a CSV/
+    │   ├── main.py
+    │   └── CSV Resultantes del Script/
+    ├── 2.0 Conseguir localizaciones de Puntos de Interés/
+    │   ├── Hospitales_Wikipedia.xlsx
+    │   ├── paradas_metro_cercanias
+    │   ├── Prueba_sacar.xlsx
+    │   ├── puntos_interes.py
+    │   └── sacar_Lat_Long
+    ├── 4.0 Estadística Básica para entender el data set/
+    │   ├── 4.1 Matriz Correlaciones para juzgar Columnas/
+    │   │   ├── 1_primer_matriz_correlacion_PEARSON.py
+    │   │   ├── 2_correlación_Pear_spear_kendall.py
+    │   │   └── figures/
+    │   └── 4.2 Funciones y cosas varias/
+    │       ├── Histograma.py
+    │       ├── Histograma_SIN_COLAS.py
+    │       ├── Histograma_TODO_un_caos.py
+    │       └── figures/
+    ├── 5.0 Cuadricula sin Colas/
+    │   └── Base_Con_cuadriculas.py
+    ├── 6.0 XGBoost primero con CSV sin añadir nada ni tocar nada/
+    │   ├── 1_xgboost_primer_sin_CADASTRALQUALITYID.py
+    │   ├── 1_xgboost_primer_uso_para ver.py
+    │   ├── Mmodelo_xgboost_60per_NO_CATASQUAL.pkl
+    │   ├── modelo_xgboost.pkl
+    │   ├── modelo_xgboost_50_perc.pkl
+    │   ├── modelo_xgboost_60per_NO_CATASQUAL.pkl
+    │   ├── probar_modelo_piso_aletor.py
+    │   └── probar_modelo_piso_aletor_NO_CATASQUAL.py
+    ├── 6.5 XGBoost con Datos Filtrados/
+    │   ├── modelo_xgboost_60per_NO_CATASQUAL.pkl
+    │   └── xgboost_primero_sin_CADASTRA.py
+    ├── 7.0 TensorFlow sin añadir nada/
+    │   ├── cuarto_tensor_flow_TabNet
+    │   ├── modelo_backpropagation_neural_tf.keras
+    │   ├── modelo_neural_tf.keras
+    │   ├── primer_Tensor_Flow
+    │   ├── quinto_tensor_flow_Backpropagation
+    │   ├── segundo_tensor_flow_with_claude
+    │   ├── tabnet_model_weights.weights.h5
+    │   ├── tercer_tensor_flow_with_claude
+    │   ├── tfmodel.keras
+    │   ├── tfmodel_improved.keras
+    │   └── tfmodel_stable.keras
+    ├── Base de Datos/
+    │   ├── Madrid_City_Center.txt
+    │   └── Madrid_POIS.rda
+    └── CSV con Información Originales/
+
+================================================
+FILE: README.md
+================================================
+This is my TFG (Trabajo de fin de Grado) 
+It is something like my bachelor thesis in Spain, about 300 hours of work beetwen learning eveything used, using it, and writing the paper.
+
+It just a recopilation of methods used to predict house prices but focused on Madrid, but it could be done in Barcelona or Valencia using the CSV in the first folders.
+But the truth is that it can be used for any city in Spain, anything sold on Idealista.com
+
+
+
+================================================
+FILE: 1.0 Bajar datos en R y convertirlos a CSV/main.py
+================================================
+import os
+import rdata
+import urllib
+import pandas as pd  # Aseg�rate de importar pandas
+
+file_names = ["Barcelona_POIS.rda", "Barcelona_Polygons.rda", "Barcelona_Sale.rda", "Madrid_POIS.rda",
+              "Madrid_Polygons.rda",  "Madrid_Sale.rda", "Valencia_POIS.rda", "Valencia_Polygons.rda",
+              "Valencia_Sale.rda", "properties_by_district.rda"]
+
+
+def download_rdata():
+    """
+    Function that downloads the .rda files from Idealista repository.
+    For each file, it is verified beforehand if the file is already in the /data folder in order to
+    avoid unnecessary downloads
+    """
+    for rda_file in file_names:
+        file_path = "data/" + rda_file
+        if not os.path.isfile(file_path):
+            urllib.request.urlretrieve("https://github.com/paezha/idealista18/raw/master/data/" + rda_file, file_path)
+        else:
+            continue
+
+
+def read_data():
+    """
+    For each file located in /data folder, extract the information as a dataframe or a dictionary containing data
+    During the execution of this function UserWarning related with rdata package may appear but can be ignored
+    """
+    datasets = {}
+
+    barcelona_pois = rdata.read_rda("data/Barcelona_POIS.rda")
+    barcelona_polygons = rdata.read_rda("data/Barcelona_Polygons.rda", default_encoding="utf8")
+    barcelona_sale = rdata.read_rda("data/Barcelona_Sale.rda")
+    madrid_pois = rdata.read_rda("data/Madrid_POIS.rda")
+    madrid_polygons = rdata.read_rda("data/Madrid_Polygons.rda", default_encoding="utf8")
+    madrid_sale = rdata.read_rda("data/Madrid_Sale.rda")
+    valencia_pois = rdata.read_rda("data/Valencia_POIS.rda")
+    valencia_polygons = rdata.read_rda("data/Valencia_Polygons.rda", default_encoding="utf8")
+    valencia_sale = rdata.read_rda("data/Valencia_Sale.rda")
+    properties_by_district = rdata.read_rda("data/properties_by_district.rda")
+
+    datasets['Barcelona_POIS'] = barcelona_pois["Barcelona_POIS"]
+    datasets['Barcelona_Polygons'] = barcelona_polygons['Barcelona_Polygons']
+    datasets['Barcelona_Sale'] = barcelona_sale['Barcelona_Sale']
+    datasets['Madrid_POIS'] = madrid_pois['Madrid_POIS']
+    datasets['Madrid_Polygons'] = madrid_polygons['Madrid_Polygons']
+    datasets['Madrid_Sale'] = madrid_sale['Madrid_Sale']
+    datasets['Valencia_POIS'] = valencia_pois['Valencia_POIS']
+    datasets['Valencia_Polygons'] = valencia_polygons['Valencia_Polygons']
+    datasets['Valencia_Sale'] = valencia_sale['Valencia_Sale']
+    datasets['properties_by_district'] = properties_by_district['properties_by_district']
+
+    return datasets
+
+
+if __name__ == '__main__':
+    download_rdata()
+    datasets = read_data()
+
+    # Guardar los datos en CSV en C:\Users\costa\Desktop\TFG\CSV
+    CSV_FOLDER = r"C:\Users\costa\Desktop\TFG\1.0 Bajar datos en R y convertirlos a CSV\CSV Resultantes del Script"
+    os.makedirs(CSV_FOLDER, exist_ok=True)  # Crear la carpeta si no existe
+
+    for dataset_name, dataset in datasets.items():
+        if isinstance(dataset, dict):  # Si el dataset es un diccionario
+            for key, df in dataset.items():
+                if isinstance(df, pd.DataFrame):  # Solo guardar si es un DataFrame
+                    csv_path = os.path.join(CSV_FOLDER, f"{key}.csv")
+                    df.to_csv(csv_path, index=False)  # Guardar sin �ndice
+                    print(f"Guardado: {csv_path}")
+        elif isinstance(dataset, pd.DataFrame):  # Si el dataset es un DataFrame directamente
+            csv_path = os.path.join(CSV_FOLDER, f"{dataset_name}.csv")
+            dataset.to_csv(csv_path, index=False)
+            print(f"Guardado: {csv_path}")
+
+
+
+================================================
+FILE: 2.0 Conseguir localizaciones de Puntos de Interés/Hospitales_Wikipedia.xlsx
+================================================
+[Non-text file]
+
+
+================================================
+FILE: 2.0 Conseguir localizaciones de Puntos de Interés/paradas_metro_cercanias
+================================================
+import requests
+import pandas as pd
+
+# Función para obtener paradas de Cercanías y metro en una ciudad
+def obtener_paradas_osm(ciudad):
+    query = f"""
+    [out:json];
+    area["name"="{ciudad}"]->.searchArea;
+    (
+      node["railway"="station"]["network"="Cercanías Madrid"](area.searchArea);
+      node["railway"="station"]["network"="Metro de Madrid"](area.searchArea);
+    );
+    out body;
+    """
+    
+    url = "http://overpass-api.de/api/interpreter"
+    response = requests.get(url, params={'data': query})
+    
+    if response.status_code == 200:
+        datos = response.json()
+        estaciones = []
+        
+        for elemento in datos['elements']:
+            if "lat" in elemento and "lon" in elemento:
+                nombre = elemento.get("tags", {}).get("name", "Desconocido")
+                lat = elemento["lat"]
+                lon = elemento["lon"]
+                estaciones.append([nombre, lat, lon])
+        
+        return estaciones
+    else:
+        print("Error en la API")
+        return []
+
+# Nombre de la ciudad donde buscar estaciones
+ciudad = "Madrid"
+
+# Obtener estaciones de Cercanías y Metro
+paradas = obtener_paradas_osm(ciudad)
+
+# Guardar resultados en un CSV con codificación UTF-8-SIG
+df = pd.DataFrame(paradas, columns=["Nombre", "Latitud", "Longitud"])
+df.to_csv("paradas_cercanias_metro.csv", index=False, encoding="utf-8-sig")
+
+print("Proceso completado. Paradas guardadas en 'paradas_cercanias_metro.csv'.")
+
+
+
+================================================
+FILE: 2.0 Conseguir localizaciones de Puntos de Interés/Prueba_sacar.xlsx
+================================================
+[Non-text file]
+
+
+================================================
+FILE: 2.0 Conseguir localizaciones de Puntos de Interés/puntos_interes.py
+================================================
+import overpy
+import pandas as pd
+
+# Inicializar la API de Overpass
+api = overpy.Overpass()
+
+# Consulta para obtener hospitales y centros de salud en Madrid
+query = """
+[out:json];
+area[name="Madrid"]->.searchArea;
+(
+  node["amenity"="hospital"](area.searchArea);
+  node["amenity"="clinic"](area.searchArea);    
+  node["healthcare"="hospital"](area.searchArea);
+  node["healthcare"="clinic"](area.searchArea);
+);
+out body;
+"""
+
+# Ejecutar la consulta
+result = api.query(query)
+
+# Extraer datos en una lista
+data = []
+for node in result.nodes:
+    name = node.tags.get("name", "Desconocido")
+    lat = node.lat
+    lon = node.lon
+    data.append([name, lat, lon])
+
+# Convertir a DataFrame
+df = pd.DataFrame(data, columns=["Nombre", "Latitud", "Longitud"])
+
+# Guardar como CSV
+df.to_csv("hospitales_madrid_3.csv", index=False, encoding="utf-8-sig")
+
+
+print("Datos guardados en hospitales_madrid.csv")
+
+
+
+================================================
+FILE: 2.0 Conseguir localizaciones de Puntos de Interés/sacar_Lat_Long
+================================================
+import pandas as pd
+import requests
+import time
+
+# Función para obtener coordenadas de OpenStreetMap
+def obtener_coordenadas_osm(lugar):
+    url = f"https://nominatim.openstreetmap.org/search?q={lugar}&format=json&limit=1"
+    headers = {"User-Agent": "Mozilla/5.0"}  # Algunos servidores bloquean peticiones sin User-Agent
+
+    response = requests.get(url, headers=headers)
+    
+    if response.status_code == 200 and response.json():
+        data = response.json()[0]
+        return data["lat"], data["lon"]
+    
+    return None, None  # Si no encuentra resultados
+
+# Cargar el archivo CSV
+df = pd.read_csv('Prueba_sacar.csv')
+
+# Iterar sobre cada lugar en el CSV
+for index, row in df.iterrows():
+    lugar = row['Hospital']  # Cambia esto si tu columna tiene otro nombre
+    lat, lon = obtener_coordenadas_osm(lugar)
+    df.at[index, 'Latitud'] = lat
+    df.at[index, 'Longitud'] = lon
+    print(f"{lugar} -> Lat: {lat}, Lon: {lon}")  # Mostrar progreso
+    time.sleep(0.3)  # Esperar 0.3 segundo entre peticiones para evitar bloqueo
+
+# Guardar el CSV actualizado
+df.to_csv('lugares_con_coordenadas.csv', index=False, encoding="utf-8-sig")
+
+print("Proceso completado y CSV actualizado.")
+
+
+
+================================================
+FILE: 4.0 Estadística Básica para entender el data set/4.1 Matriz Correlaciones para juzgar Columnas/1_primer_matriz_correlacion_PEARSON.py
+================================================
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# Cargar el dataset
+df = pd.read_csv("Madrid_Sale.csv")
+
+df.drop(['ASSETID', 'PERIOD', 'geometry'], axis=1, inplace=True)
+
+
+# Matriz de correlación
+plt.figure(figsize=(12, 8))
+sns.heatmap(df.corr(), annot=False, cmap="coolwarm", linewidths=0.5)
+plt.title("Matriz de correlación")
+plt.show()
+
+correlation = df.corr()["PRICE"].sort_values(ascending=False)
+print(correlation)
+correlation.to_csv("C:\\Users\\costa\\Desktop\\TFG\\4.0 Matriz Correlaciones para juzgar Columnas\\correlation_price.csv", header=True, encoding='utf-8')
+
+
+
+
+
+
+================================================
+FILE: 4.0 Estadística Básica para entender el data set/4.1 Matriz Correlaciones para juzgar Columnas/2_correlación_Pear_spear_kendall.py
+================================================
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# Cargar el dataset
+df = pd.read_csv("Madrid_Sale.csv")
+df.drop(['ASSETID', 'PERIOD', 'geometry'], axis=1, inplace=True)
+
+
+# Definir los métodos de correlación
+methods = ["pearson", "spearman"]
+
+# Crear una figura con 3 subgráficos (uno por método)
+fig, axes = plt.subplots(1, 2, figsize=(18, 6))
+
+for i, method in enumerate(methods):
+    corr_matrix = df.corr(method=method)
+    sns.heatmap(corr_matrix, annot=False, cmap="coolwarm", linewidths=0.5, ax=axes[i])
+    axes[i].set_title(f"Matriz de correlación ({method.capitalize()})")
+
+plt.tight_layout()
+plt.show()
+
+
+
+
+================================================
+FILE: 4.0 Estadística Básica para entender el data set/4.2 Funciones y cosas varias/Histograma.py
+================================================
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+class MadridPropertyAnalyzer:
+    def __init__(self, file_path):
+        """
+        Initialize the analyzer with the Madrid property sales dataset
+        
+        Parameters:
+        -----------
+        file_path : str
+            Path to the CSV file containing Madrid property sales data
+        """
+        # Read the CSV file 
+
+        self.df = pd.read_csv(file_path, 
+                               low_memory=False,  # Handle mixed data types
+                               parse_dates=False)  # Avoid date parsing overhead
+        
+        # Basic dataset information
+        self.basic_info = {
+            'total_properties': len(self.df),
+            'total_unique_properties': self.df['ASSETID'].nunique(),
+            'columns': self.df.columns.tolist()
+        }
+    
+    def comprehensive_property_analysis(self):
+        """
+        Perform a comprehensive analysis of the Madrid property dataset
+        
+        Returns:
+        --------
+        dict : A dictionary containing various insights about the properties
+        """
+        # Property Price Analysis
+        price_analysis = {
+            'price_stats': {
+                'min_price': self.df['PRICE'].min(),
+                'max_price': self.df['PRICE'].max(),
+                'mean_price': self.df['PRICE'].mean(),
+                'median_price': self.df['PRICE'].median(),
+            },
+            'price_per_sqm_stats': {
+                'min_price_per_sqm': self.df['UNITPRICE'].min(),
+                'max_price_per_sqm': self.df['UNITPRICE'].max(),
+                'mean_price_per_sqm': self.df['UNITPRICE'].mean(),
+                'median_price_per_sqm': self.df['UNITPRICE'].median(),
+            }
+        }
+        
+        # Property Characteristics Analysis
+        characteristics_analysis = {
+            'room_distribution': self.df['ROOMNUMBER'].value_counts(normalize=True).to_dict(),
+            'area_distribution': {
+                'min_area': self.df['CONSTRUCTEDAREA'].min(),
+                'max_area': self.df['CONSTRUCTEDAREA'].max(),
+                'mean_area': self.df['CONSTRUCTEDAREA'].mean(),
+                'median_area': self.df['CONSTRUCTEDAREA'].median(),
+            },
+            'amenities_prevalence': {
+                'terrace_percentage': (self.df['HASTERRACE'] == 1).mean() * 100,
+                'lift_percentage': (self.df['HASLIFT'] == 1).mean() * 100,
+                'air_conditioning_percentage': (self.df['HASAIRCONDITIONING'] == 1).mean() * 100,
+                'parking_space_percentage': (self.df['HASPARKINGSPACE'] == 1).mean() * 100,
+                'box_room_percentage': (self.df['HASBOXROOM'] == 1).mean() * 100,
+            }
+        }
+        
+        # Location and Orientation Analysis
+        location_analysis = {
+            'orientation_distribution': {
+                'north_facing': (self.df['HASNORTHORIENTATION'] == 1).mean() * 100,
+                'south_facing': (self.df['HASSOUTHORIENTATION'] == 1).mean() * 100,
+                'east_facing': (self.df['HASEASTORIENTATION'] == 1).mean() * 100,
+                'west_facing': (self.df['HASWESTORIENTATION'] == 1).mean() * 100,
+            },
+            'distance_statistics': {
+                'to_city_center': {
+                    'min': self.df['DISTANCE_TO_CITY_CENTER'].min(),
+                    'max': self.df['DISTANCE_TO_CITY_CENTER'].max(),
+                    'mean': self.df['DISTANCE_TO_CITY_CENTER'].mean(),
+                    'median': self.df['DISTANCE_TO_CITY_CENTER'].median(),
+                },
+                'to_metro': {
+                    'min': self.df['DISTANCE_TO_METRO'].min(),
+                    'max': self.df['DISTANCE_TO_METRO'].max(),
+                    'mean': self.df['DISTANCE_TO_METRO'].mean(),
+                    'median': self.df['DISTANCE_TO_METRO'].median(),
+                }
+            }
+        }
+        
+        # Advanced Price Correlations
+        price_correlations = {
+            'price_correlations': {
+                'price_vs_area': self.df['PRICE'].corr(self.df['CONSTRUCTEDAREA']),
+                'price_vs_rooms': self.df['PRICE'].corr(self.df['ROOMNUMBER']),
+                'price_vs_distance_to_center': self.df['PRICE'].corr(self.df['DISTANCE_TO_CITY_CENTER']),
+            }
+        }
+        
+        # Construction Year Analysis
+        construction_analysis = {
+            'construction_year_stats': {
+                'min_year': self.df['CONSTRUCTIONYEAR'].min(),
+                'max_year': self.df['CONSTRUCTIONYEAR'].max(),
+                'mean_year': self.df['CONSTRUCTIONYEAR'].mean(),
+                'median_year': self.df['CONSTRUCTIONYEAR'].median(),
+            },
+            'age_distribution': self.df['CONSTRUCTIONYEAR'].value_counts(bins=10, normalize=True)
+        }
+        
+        return {
+            'basic_info': self.basic_info,
+            'price_analysis': price_analysis,
+            'characteristics_analysis': characteristics_analysis,
+            'location_analysis': location_analysis,
+            'price_correlations': price_correlations,
+            'construction_analysis': construction_analysis
+        }
+    
+    def generate_advanced_visualizations(self, output_dir):
+        """
+        Generate advanced visualizations for the dataset
+        
+        Parameters:
+        -----------
+        output_dir : str, optional
+            Directory to save the generated plots
+        """
+        import os
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # Price Distribution
+        plt.figure(figsize=(12, 6))
+        self.df['PRICE'].hist(bins=50)
+        plt.title('Distribution of Property Prices in Madrid')
+        plt.xlabel('Price (€)')
+        plt.ylabel('Frequency')
+        plt.savefig(f'{output_dir}/price_distribution.png')
+        plt.close()
+        
+        # Price vs Area Scatter Plot
+        plt.figure(figsize=(12, 6))
+        plt.scatter(self.df['CONSTRUCTEDAREA'], self.df['PRICE'], alpha=0.1)
+        plt.title('Property Price vs Constructed Area')
+        plt.xlabel('Constructed Area (m²)')
+        plt.ylabel('Price (€)')
+        plt.savefig(f'{output_dir}/price_vs_area_scatter.png')
+        plt.close()
+        
+        # Correlation Heatmap
+        numeric_columns = ['PRICE', 'UNITPRICE', 'CONSTRUCTEDAREA', 'ROOMNUMBER', 
+                           'BATHNUMBER', 'DISTANCE_TO_CITY_CENTER', 'CONSTRUCTIONYEAR']
+        plt.figure(figsize=(12, 10))
+        correlation_matrix = self.df[numeric_columns].corr()
+        sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', center=0)
+        plt.title('Correlation Heatmap of Numeric Property Features')
+        plt.tight_layout()
+        plt.savefig(f'{output_dir}/correlation_heatmap.png')
+        plt.close()
+
+    def plot_histogram(self, output_dir, features, bins=50, figsize=(20, 5), title=None):
+        """
+        features : list of str
+            List of column names to plot.
+        bins : int, default=50
+            Number of bins for each histogram.
+        figsize : tuple, default=(20, 5)
+            Base size for each row of histograms (width, height).
+        title : str, optional
+            Title for the full figure. If None, no main title is set.
+        """
+        import matplotlib.pyplot as plt
+        import numpy as np
+
+        print("\nGenerating visualizations...")
+
+        # Check if features exist in the DataFrame
+        missing = [col for col in features if col not in self.df.columns]
+        if missing:
+            print(f"Warning: These features were not found in the dataset: {', '.join(missing)}")
+            features = [col for col in features if col in self.df.columns]
+
+        if not features:
+            print("No valid features provided for plotting.")
+            return
+
+        # Calculate grid size
+        n_cols = 4
+        n_rows = (len(features) + n_cols - 1) // n_cols
+
+        fig, axes = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(figsize[0], figsize[1]*n_rows))
+        fig.tight_layout(pad=3.0)
+        axes = axes.flatten()
+
+        # Plot each selected feature
+        for i, col in enumerate(features):
+            self.df[col].dropna().hist(bins=bins, 
+                                    ax=axes[i], 
+                                    alpha=0.7, 
+                                    color='skyblue', 
+                                    edgecolor='black')
+            axes[i].set_title(f'Distribution of {col}', fontsize=10)
+            axes[i].set_xlabel(col, fontsize=8)
+            axes[i].grid(alpha=0.3)
+
+        # Turn off unused subplots
+        for j in range(len(features), len(axes)):
+            axes[j].axis('off')
+
+        if title:
+            fig.suptitle(title, fontsize=16)
+            plt.subplots_adjust(top=0.95)
+
+        plt.show()
+        plt.savefig(f'{output_dir}/Neat_Histogram.png')
+
+    def printHead(self):
+        """
+        Print the first few rows of the dataset for quick inspection
+        """
+        print(self.df.head(1))
+
+
+
+# Example usage
+def main():
+    file_path = (r"C:\Users\costa\Desktop\TFG\4.0 Estadística Básica para entender el data set\4.2 Funciones y cosas varias\Madrid_Sale.csv")
+    output_dir = (r"4.0 Estadística Básica para entender el data set\4.2 Funciones y cosas varias\figures")
+
+    analyzer = MadridPropertyAnalyzer(file_path)
+    
+    # Perform comprehensive analysis
+    analysis_results = analyzer.comprehensive_property_analysis()
+    
+    # Print key insights
+    print("--- Madrid Property Market Analysis ---")
+    print("\nBasic Information:")
+    print(f"Total Properties: {analysis_results['basic_info']['total_properties']}")
+    print(f"Unique Properties: {analysis_results['basic_info']['total_unique_properties']}")
+    
+    print("\nPrice Analysis:")
+    print(f"Mean Price: €{analysis_results['price_analysis']['price_stats']['mean_price']:,.2f}")
+    print(f"Median Price: €{analysis_results['price_analysis']['price_stats']['median_price']:,.2f}")
+    print(f"Mean Price per m²: €{analysis_results['price_analysis']['price_per_sqm_stats']['mean_price_per_sqm']:,.2f}")
+    
+    print("\nProperty Characteristics:")
+    room_dist = analysis_results['characteristics_analysis']['room_distribution']
+    print("Room Distribution:")
+    for rooms, percentage in room_dist.items():
+        print(f"{rooms} rooms: {percentage*100:.2f}%")
+    
+    print("\nAmenities Prevalence:")
+    amenities = analysis_results['characteristics_analysis']['amenities_prevalence']
+    for amenity, percentage in amenities.items():
+        print(f"{amenity.replace('_', ' ').title()}: {percentage:.2f}%")
+
+
+    # Generate histrograms for selected features
+    print("\nGenerating histograms...")
+    analyzer.plot_histogram(output_dir, features = ["PRICE", "CONSTRUCTEDAREA", "ROOMNUMBER", "BATHNUMBER", 
+    "CONSTRUCTIONYEAR", "CADCONSTRUCTIONYEAR", "DISTANCE_TO_CITY_CENTER", 
+    "DISTANCE_TO_METRO", "DISTANCE_TO_CASTELLANA", "LONGITUDE", "LATITUDE"], )
+
+    # Generate advanced visualizations
+    analyzer.generate_advanced_visualizations(output_dir)
+    print(f"Advanced visualizations saved to: {output_dir}")
+    
+
+if __name__ == '__main__':
+    main()
+
+
+================================================
+FILE: 4.0 Estadística Básica para entender el data set/4.2 Funciones y cosas varias/Histograma_SIN_COLAS.py
+================================================
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+class MadridPropertyAnalyzer:
+    def __init__(self, file_path):
+        """
+        Initialize the analyzer with the Madrid property sales dataset
+        
+        Parameters:
+        -----------
+        file_path : str
+            Path to the CSV file containing Madrid property sales data
+        """
+        # Read the CSV file 
+
+        self.df = pd.read_csv(file_path, 
+                               low_memory=False,  # Handle mixed data types
+                               parse_dates=False)  # Avoid date parsing overhead
+        
+        # Basic dataset information
+        self.basic_info = {
+            'total_properties': len(self.df),
+            'total_unique_properties': self.df['ASSETID'].nunique(),
+            'columns': self.df.columns.tolist()
+        }
+    
+
+    def plot_histogram(self, features, bins=85, figsize=(20, 5), title=None):
+        """
+        features : list of str
+            List of column names to plot.
+        bins : int, default=50
+            Number of bins for each histogram.
+        figsize : tuple, default=(20, 5)
+            Base size for each row of histograms (width, height).
+        title : str, optional
+            Title for the full figure. If None, no main title is set.
+        """
+        import matplotlib.pyplot as plt
+        import numpy as np
+
+        print("\nGenerating visualizations...")
+
+        # Check if features exist in the DataFrame
+        missing = [col for col in features if col not in self.df.columns]
+        if missing:
+            print(f"Warning: These features were not found in the dataset: {', '.join(missing)}")
+            features = [col for col in features if col in self.df.columns]
+
+        if not features:
+            print("No valid features provided for plotting.")
+            return
+
+        # Calculate grid size
+        n_cols = 4
+        n_rows = (len(features) + n_cols - 1) // n_cols
+
+        fig, axes = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(figsize[0], figsize[1]*n_rows))
+        fig.tight_layout(pad=3.0)
+        axes = axes.flatten()
+
+        # Plot each selected feature
+        for i, col in enumerate(features):
+            self.df[col].dropna().hist(bins=bins, 
+                                    ax=axes[i], 
+                                    alpha=0.7, 
+                                    color='skyblue', 
+                                    edgecolor='black')
+            axes[i].set_title(f'Distribution of {col}', fontsize=10)
+            axes[i].set_xlabel(col, fontsize=8)
+            axes[i].grid(alpha=0.3)
+
+        # Turn off unused subplots
+        for j in range(len(features), len(axes)):
+            axes[j].axis('off')
+
+        if title:
+            fig.suptitle(title, fontsize=16)
+            plt.subplots_adjust(top=0.95)
+
+        plt.show(block=False)
+
+
+    def filter_tails(self, features, features2, percent=0.9):
+        """
+        Parameters:
+        -----------
+        features : list of str
+            Columns to filter.
+        percent : float, default=0.9
+            Percentage of central data to keep (between 0 and 1).
+        -----------
+        """
+        df_filtered = self.df.copy()
+        tail = (1 - percent) / 2  # For 90%, tail = 0.05
+
+        for col in features:
+            if col not in df_filtered.columns:
+                print(f"Warning: Column '{col}' not found.")
+                continue
+            if not np.issubdtype(df_filtered[col].dtype, np.number):
+                print(f"Warning: Column '{col}' is not numeric.")
+                continue
+
+            lower = df_filtered[col].quantile(tail)
+            upper = df_filtered[col].quantile(1 - tail)
+            df_filtered = df_filtered[(df_filtered[col] >= lower) & (df_filtered[col] <= upper)]
+
+        for col in features2:
+            if col not in df_filtered.columns:
+                print(f"Warning: Column '{col}' not found.")
+                continue
+            if not np.issubdtype(df_filtered[col].dtype, np.number):
+                print(f"Warning: Column '{col}' is not numeric.")
+                continue
+
+            upper = df_filtered[col].quantile(1 - tail)
+            df_filtered = df_filtered[(df_filtered[col] <= upper)]
+
+        # Create a new instance of MadridPropertyAnalyzer with the filtered data
+        new_analyzer = MadridPropertyAnalyzer.__new__(MadridPropertyAnalyzer)  # Create an instance manually
+        new_analyzer.df = df_filtered  # Assign the filtered DataFrame
+        new_analyzer.basic_info = {
+            'total_properties': len(df_filtered),
+            'total_unique_properties': df_filtered['ASSETID'].nunique(),
+            'columns': df_filtered.columns.tolist()
+        }
+        
+        return new_analyzer
+
+
+
+# Example usage
+def main():
+    file_path = (r"C:\Users\costa\Desktop\TFG\4.0 Estadística Básica para entender el data set\4.2 Funciones y cosas varias\Madrid_Sale.csv")
+    output_dir = (r"4.0 Estadística Básica para entender el data set\4.2 Funciones y cosas varias\figures")
+
+    features_both = ["CADCONSTRUCTIONYEAR", "LONGITUDE", "LATITUDE"]
+
+    features2_high = ["PRICE", "CONSTRUCTEDAREA", "ROOMNUMBER", "DISTANCE_TO_CITY_CENTER", "DISTANCE_TO_METRO", "DISTANCE_TO_CASTELLANA"]
+    
+    features = ["PRICE", "CONSTRUCTEDAREA", "ROOMNUMBER", "BATHNUMBER", "CADCONSTRUCTIONYEAR", "DISTANCE_TO_CITY_CENTER", 
+    "DISTANCE_TO_METRO", "DISTANCE_TO_CASTELLANA", "LONGITUDE", "LATITUDE"]
+
+    analyzer = MadridPropertyAnalyzer(file_path)
+
+    analyzer_NO_TAILS = analyzer.filter_tails(features_both, features2_high, percent=0.97)
+    analyzer_NO_TAILS.df.to_csv(r'C:\Users\costa\Desktop\TFG\4.0 Estadística Básica para entender el data set\4.2 Funciones y cosas varias\filtered_dataset_NO_TAILS.csv', index=False)
+    
+    # Print key insights
+    print("--- Madrid Property Market Analysis ---")
+
+    # Generate histrograms for selected features
+    print("\nGenerating histograms...")
+    analyzer.plot_histogram(features)
+    plt.savefig(f'{output_dir}/Neat_Histogram.png')
+    analyzer_NO_TAILS.plot_histogram(features, title="Filtered Histograms (No Tails)")
+    plt.savefig(f'{output_dir}/Neat_Histogram_NO_TAILS.png')
+
+if __name__ == '__main__':
+    main()
+
+
+================================================
+FILE: 4.0 Estadística Básica para entender el data set/4.2 Funciones y cosas varias/Histograma_TODO_un_caos.py
+================================================
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+class MadridPropertyAnalyzer:
+    def __init__(self, file_path):
+        """
+        Initialize the analyzer with the Madrid property sales dataset
+        
+        Parameters:
+        -----------
+        file_path : str
+            Path to the CSV file containing Madrid property sales data
+        """
+        # Read the CSV file 
+
+        self.df = pd.read_csv(file_path, 
+                               low_memory=False,  # Handle mixed data types
+                               parse_dates=False)  # Avoid date parsing overhead
+        
+        # Basic dataset information
+        self.basic_info = {
+            'total_properties': len(self.df),
+            'total_unique_properties': self.df['ASSETID'].nunique(),
+            'columns': self.df.columns.tolist()
+        }
+    
+    def comprehensive_property_analysis(self):
+        """
+        Perform a comprehensive analysis of the Madrid property dataset
+        
+        Returns:
+        --------
+        dict : A dictionary containing various insights about the properties
+        """
+        # Property Price Analysis
+        price_analysis = {
+            'price_stats': {
+                'min_price': self.df['PRICE'].min(),
+                'max_price': self.df['PRICE'].max(),
+                'mean_price': self.df['PRICE'].mean(),
+                'median_price': self.df['PRICE'].median(),
+            },
+            'price_per_sqm_stats': {
+                'min_price_per_sqm': self.df['UNITPRICE'].min(),
+                'max_price_per_sqm': self.df['UNITPRICE'].max(),
+                'mean_price_per_sqm': self.df['UNITPRICE'].mean(),
+                'median_price_per_sqm': self.df['UNITPRICE'].median(),
+            }
+        }
+        
+        # Property Characteristics Analysis
+        characteristics_analysis = {
+            'room_distribution': self.df['ROOMNUMBER'].value_counts(normalize=True).to_dict(),
+            'area_distribution': {
+                'min_area': self.df['CONSTRUCTEDAREA'].min(),
+                'max_area': self.df['CONSTRUCTEDAREA'].max(),
+                'mean_area': self.df['CONSTRUCTEDAREA'].mean(),
+                'median_area': self.df['CONSTRUCTEDAREA'].median(),
+            },
+            'amenities_prevalence': {
+                'terrace_percentage': (self.df['HASTERRACE'] == 1).mean() * 100,
+                'lift_percentage': (self.df['HASLIFT'] == 1).mean() * 100,
+                'air_conditioning_percentage': (self.df['HASAIRCONDITIONING'] == 1).mean() * 100,
+                'parking_space_percentage': (self.df['HASPARKINGSPACE'] == 1).mean() * 100,
+                'box_room_percentage': (self.df['HASBOXROOM'] == 1).mean() * 100,
+            }
+        }
+        
+        # Location and Orientation Analysis
+        location_analysis = {
+            'orientation_distribution': {
+                'north_facing': (self.df['HASNORTHORIENTATION'] == 1).mean() * 100,
+                'south_facing': (self.df['HASSOUTHORIENTATION'] == 1).mean() * 100,
+                'east_facing': (self.df['HASEASTORIENTATION'] == 1).mean() * 100,
+                'west_facing': (self.df['HASWESTORIENTATION'] == 1).mean() * 100,
+            },
+            'distance_statistics': {
+                'to_city_center': {
+                    'min': self.df['DISTANCE_TO_CITY_CENTER'].min(),
+                    'max': self.df['DISTANCE_TO_CITY_CENTER'].max(),
+                    'mean': self.df['DISTANCE_TO_CITY_CENTER'].mean(),
+                    'median': self.df['DISTANCE_TO_CITY_CENTER'].median(),
+                },
+                'to_metro': {
+                    'min': self.df['DISTANCE_TO_METRO'].min(),
+                    'max': self.df['DISTANCE_TO_METRO'].max(),
+                    'mean': self.df['DISTANCE_TO_METRO'].mean(),
+                    'median': self.df['DISTANCE_TO_METRO'].median(),
+                }
+            }
+        }
+        
+        # Advanced Price Correlations
+        price_correlations = {
+            'price_correlations': {
+                'price_vs_area': self.df['PRICE'].corr(self.df['CONSTRUCTEDAREA']),
+                'price_vs_rooms': self.df['PRICE'].corr(self.df['ROOMNUMBER']),
+                'price_vs_distance_to_center': self.df['PRICE'].corr(self.df['DISTANCE_TO_CITY_CENTER']),
+            }
+        }
+        
+        # Construction Year Analysis
+        construction_analysis = {
+            'construction_year_stats': {
+                'min_year': self.df['CONSTRUCTIONYEAR'].min(),
+                'max_year': self.df['CONSTRUCTIONYEAR'].max(),
+                'mean_year': self.df['CONSTRUCTIONYEAR'].mean(),
+                'median_year': self.df['CONSTRUCTIONYEAR'].median(),
+            },
+            'age_distribution': self.df['CONSTRUCTIONYEAR'].value_counts(bins=10, normalize=True)
+        }
+        
+        return {
+            'basic_info': self.basic_info,
+            'price_analysis': price_analysis,
+            'characteristics_analysis': characteristics_analysis,
+            'location_analysis': location_analysis,
+            'price_correlations': price_correlations,
+            'construction_analysis': construction_analysis
+        }
+    
+    def generate_advanced_visualizations(self, output_dir):
+        """
+        Generate advanced visualizations for the dataset
+        
+        Parameters:
+        -----------
+        output_dir : str, optional
+            Directory to save the generated plots
+        """
+        import os
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # Price Distribution
+        plt.figure(figsize=(12, 6))
+        self.df['PRICE'].hist(bins=50)
+        plt.title('Distribution of Property Prices in Madrid')
+        plt.xlabel('Price (€)')
+        plt.ylabel('Frequency')
+        plt.savefig(f'{output_dir}/price_distribution.png')
+        plt.close()
+        
+        # Price vs Area Scatter Plot
+        plt.figure(figsize=(12, 6))
+        plt.scatter(self.df['CONSTRUCTEDAREA'], self.df['PRICE'], alpha=0.1)
+        plt.title('Property Price vs Constructed Area')
+        plt.xlabel('Constructed Area (m²)')
+        plt.ylabel('Price (€)')
+        plt.savefig(f'{output_dir}/price_vs_area_scatter.png')
+        plt.close()
+        
+        # Correlation Heatmap
+        numeric_columns = ['PRICE', 'UNITPRICE', 'CONSTRUCTEDAREA', 'ROOMNUMBER', 
+                           'BATHNUMBER', 'DISTANCE_TO_CITY_CENTER', 'CONSTRUCTIONYEAR']
+        plt.figure(figsize=(12, 10))
+        correlation_matrix = self.df[numeric_columns].corr()
+        sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', center=0)
+        plt.title('Correlation Heatmap of Numeric Property Features')
+        plt.tight_layout()
+        plt.savefig(f'{output_dir}/correlation_heatmap.png')
+        plt.close()
+
+    def plot_histogram(self, feature, bins=30, figsize=(10, 6), title=None):
+        """
+        Plot histogram of a specific feature in the dataset
+        
+        Parameters:
+        -----------
+        feature : str
+            Column name of the feature to plot
+        bins : int, default=30
+            Number of bins for the histogram
+        figsize : tuple, default=(10, 6)
+            Figure size (width, height) in inches
+        title : str, optional
+            Custom title for the plot. If None, a default title will be used
+        """
+        if feature not in self.df.columns:
+            print(f"Feature '{feature}' not found in the dataset.")
+            print(f"Available features: {', '.join(self.df.columns)}")
+            return
+        
+        plt.figure(figsize=figsize)
+        plt.hist(self.df[feature].dropna(), bins=bins, alpha=0.7, color='skyblue', edgecolor='black')
+        
+        # Set plot title
+        if title is None:
+            title = f'Histogram of {feature}'
+        plt.title(title, fontsize=14)
+        
+        plt.xlabel(feature, fontsize=12)
+        plt.ylabel('Frequency', fontsize=12)
+        plt.grid(alpha=0.3)
+        plt.tight_layout()
+        plt.show()
+
+# Example usage
+def main():
+    file_path = (r"C:\Users\costa\Desktop\TFG\4.0 Estadística Básica para entender el data set\4.2 Funciones y cosas varias\Madrid_Sale.csv")
+    output_dir = (r"4.0 Estadística Básica para entender el data set\4.2 Funciones y cosas varias\figures")
+
+    analyzer = MadridPropertyAnalyzer(file_path)
+    
+    # Perform comprehensive analysis
+    analysis_results = analyzer.comprehensive_property_analysis()
+    
+    # Print key insights
+    print("--- Madrid Property Market Analysis ---")
+    print("\nBasic Information:")
+    print(f"Total Properties: {analysis_results['basic_info']['total_properties']}")
+    print(f"Unique Properties: {analysis_results['basic_info']['total_unique_properties']}")
+    
+    print("\nPrice Analysis:")
+    print(f"Mean Price: €{analysis_results['price_analysis']['price_stats']['mean_price']:,.2f}")
+    print(f"Median Price: €{analysis_results['price_analysis']['price_stats']['median_price']:,.2f}")
+    print(f"Mean Price per m²: €{analysis_results['price_analysis']['price_per_sqm_stats']['mean_price_per_sqm']:,.2f}")
+    
+    print("\nProperty Characteristics:")
+    room_dist = analysis_results['characteristics_analysis']['room_distribution']
+    print("Room Distribution:")
+    for rooms, percentage in room_dist.items():
+        print(f"{rooms} rooms: {percentage*100:.2f}%")
+    
+    print("\nAmenities Prevalence:")
+    amenities = analysis_results['characteristics_analysis']['amenities_prevalence']
+    for amenity, percentage in amenities.items():
+        print(f"{amenity.replace('_', ' ').title()}: {percentage:.2f}%")
+
+    # After all printing is done, execute the visualization functions
+    print("\nGenerating visualizations...")
+
+    # Get all numeric columns for histograms
+    numeric_cols = analyzer.df.select_dtypes(include=[np.number]).columns.tolist()
+
+    # Calculate number of rows needed (4 columns)
+    n_rows = (len(numeric_cols) + 3) // 4  # Redondeo hacia arriba
+
+    # Create figure with grid of subplots (4 columns)
+    fig, axes = plt.subplots(nrows=n_rows, ncols=4, figsize=(20, 5*n_rows))
+    fig.tight_layout(pad=3.0)
+
+    # Plot histogram for each numeric feature
+    for i, col in enumerate(numeric_cols):
+        row_idx = i // 4
+        col_idx = i % 4
+        analyzer.df[col].hist(bins=50, 
+                            ax=axes[row_idx, col_idx],  # Acceso correcto al subplot
+                            alpha=0.7, 
+                            color='skyblue', 
+                            edgecolor='black')
+        axes[row_idx, col_idx].set_title(f'Distribution of {col}', fontsize=10)
+        axes[row_idx, col_idx].set_xlabel(col, fontsize=8)
+        axes[row_idx, col_idx].grid(alpha=0.3)
+
+    # Hide empty subplots if any
+    for j in range(len(numeric_cols), n_rows*4):
+        row_idx = j // 4
+        col_idx = j % 4
+        axes[row_idx, col_idx].axis('off')
+
+    plt.show()
+    plt.savefig(f'{output_dir}/historigrama_de_todo.png')
+
+
+    # Generate advanced visualizations
+    analyzer.generate_advanced_visualizations(output_dir)
+    print(f"Advanced visualizations saved to: {output_dir}")
+    
+
+if __name__ == '__main__':
+    main()
+
+
+
+================================================
+FILE: 5.0 Cuadricula sin Colas/Base_Con_cuadriculas.py
+================================================
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+def generate_grid_zone(input_file, output_file, grid_size=60):
+    # Leer el archivo CSV original
+    df = pd.read_csv(input_file)
+
+    # Definir los límites de las coordenadas
+    lon_min, lon_max = -3.768, -3.608
+    lat_min, lat_max = 40.346, 40.498
+
+    # Normalizar longitud y latitud a índices de la cuadrícula (0-99)
+    df['lon_normalized'] = ((df['LONGITUDE'] - lon_min) / (lon_max - lon_min)) * (grid_size - 1)
+    df['lat_normalized'] = ((df['LATITUDE'] - lat_min) / (lat_max - lat_min)) * (grid_size - 1)
+
+    # Convertir las coordenadas normalizadas a números de zona (1-10000)
+    df['Zona_Cuadricula'] = (df['lat_normalized'].astype(int) * grid_size + df['lon_normalized'].astype(int)) + 1
+
+    # Guardar el resultado en un nuevo archivo CSV
+    df.to_csv(output_file, index=False)
+    print(f"Archivo con las zonas generado: {output_file}")
+    
+    return df
+
+def create_heatmaps(df, grid_size, save_path=None):
+    """
+    Crea heatmaps separados para densidad, precio medio y precio por m2
+    
+    Args:
+        df: DataFrame con la columna Zona_Cuadricula
+        grid_size: Tamaño de la cuadrícula (50 para una 50x50)
+        save_path: Opcional, ruta base para guardar las imágenes (sin extensión)
+    """
+    # Crear matrices vacías para los heatmaps
+    density_matrix = np.zeros((grid_size, grid_size))
+    price_matrix = np.zeros((grid_size, grid_size))
+    price_m2_matrix = np.zeros((grid_size, grid_size))
+    
+    # Calcular valores para cada celda
+    for zone in range(1, grid_size**2 + 1):
+        # Obtener coordenadas (x,y) de la zona
+        y = (zone - 1) // grid_size
+        x = (zone - 1) % grid_size
+        
+        # Filtrar propiedades en esta zona
+        zone_data = df[df['Zona_Cuadricula'] == zone]
+        
+        # Calcular métricas
+        density_matrix[y, x] = len(zone_data)
+        price_matrix[y, x] = zone_data['PRICE'].mean() if not zone_data.empty else 0
+        price_m2_matrix[y, x] = zone_data['UNITPRICE'].mean() if not zone_data.empty else 0
+    
+    #Precio medio m2 total
+    price_m2_total = df['UNITPRICE'].mean()
+    print(f"Precio medio por m2 total: {price_m2_total:.2f} €")
+    
+    # Heatmap de densidad
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(density_matrix, cmap='viridis', 
+                cbar_kws={'label': 'Número de viviendas'})
+    plt.title(f'Densidad de Viviendas (Total: {len(df)} propiedades)')
+    plt.xlabel('Coordenada X')
+    plt.ylabel('Coordenada Y')
+    plt.gca().invert_yaxis()  # Para que Y=0 esté abajo
+    
+    if save_path:
+        density_path = f"{save_path}_densidad.png"
+        plt.savefig(density_path, dpi=300, bbox_inches='tight')
+        print(f"Heatmap de densidad guardado en: {density_path}")
+    
+    plt.show()
+    
+    # Heatmap de precios medios
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(price_matrix, cmap='plasma',
+                cbar_kws={'label': 'Precio medio (€)'})
+    plt.title('Precio Medio por Zona')
+    plt.xlabel('Coordenada X')
+    plt.ylabel('Coordenada Y')
+    plt.gca().invert_yaxis()
+    
+    if save_path:
+        price_path = f"{save_path}_precio_medio.png"
+        plt.savefig(price_path, dpi=300, bbox_inches='tight')
+        print(f"Heatmap de precio medio guardado en: {price_path}")
+    
+    plt.show()
+    
+    # Heatmap de precios por m2
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(price_m2_matrix, cmap='magma',
+                cbar_kws={'label': 'Precio medio por m² (€)'})
+    plt.title('Precio Medio por Metro Cuadrado')
+    plt.xlabel('Coordenada X')
+    plt.ylabel('Coordenada Y')
+    plt.gca().invert_yaxis()
+    
+    if save_path:
+        price_m2_path = f"{save_path}_precio_m2.png"
+        plt.savefig(price_m2_path, dpi=300, bbox_inches='tight')
+        print(f"Heatmap de precio por m2 guardado en: {price_m2_path}")
+    
+    plt.show()
+
+# Proceso principal
+if __name__ == "__main__":
+    # Configuración de rutas
+    input_file = r"C:\Users\costa\Desktop\TFG\5.0 Cuadricula sin Colas\filtered_dataset_NO_TAILS.csv"
+    output_file = r"C:\Users\costa\Desktop\TFG\5.0 Cuadricula sin Colas\Dataset_Con_Filtrado_y_Cuadrículas.csv"
+    heatmaps_base_path = r"C:\Users\costa\Desktop\TFG\5.0 Cuadricula sin Colas\heatmap"
+
+    grid_size = 60 
+
+    # 1. Generar las zonas de cuadrícula
+    df_with_grid = generate_grid_zone(input_file, output_file, grid_size)
+    
+    # 2. Crear y mostrar los heatmaps
+    create_heatmaps(df_with_grid, grid_size, save_path=heatmaps_base_path)
+
+
+================================================
+FILE: 6.0 XGBoost primero con CSV sin añadir nada ni tocar nada/1_xgboost_primer_sin_CADASTRALQUALITYID.py
+================================================
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+import xgboost as xgb
+from sklearn.metrics import mean_absolute_error
+import joblib
+
+print("Modelo guardado correctamente.")
+
+# 1. Cargar los datos
+data = pd.read_csv(r"6.0 XGBoost primero con CSV sin añadir nada ni tocar nada\Madrid_Sale.csv")  # Cambia "datos.csv" por la ruta real
+
+data = data.drop(columns=['ASSETID', 'PERIOD', 'UNITPRICE', 'CONSTRUCTIONYEAR', 'CADASTRALQUALITYID' ,'geometry'])
+
+
+# 2. Preprocesamiento
+# Rellenar valores nulos con 0
+data.fillna(0, inplace=True)
+
+
+
+# Convertir variables categóricas en dummies
+data = pd.get_dummies(data, drop_first=True)
+
+# 3. Definir variables predictoras y objetivo
+X = data.drop(columns=["PRICE"])  # Todas menos PRICE
+y = data["PRICE"]
+
+
+# 4. Dividir en entrenamiento y validación (80%-20%)
+X_sample, _, y_sample, _ = train_test_split(X, y, test_size=0.4, random_state=35)  # Quedarse con el 50% de los datos por sencillez
+X_train, X_valid, y_train, y_valid = train_test_split(X_sample, y_sample, test_size=0.2, random_state=42)
+
+
+"""
+print(X_train.isna().sum())
+print(y_train.isna().sum())
+
+
+"""
+
+# 5. Entrenar XGBoost con valores por defecto
+model = xgb.XGBRegressor(objective="reg:squarederror", random_state=42)
+model.fit(X_train, y_train)
+
+# 6. Predicción y evaluación
+y_pred = model.predict(X_valid)
+mae = mean_absolute_error(y_valid, y_pred)
+print(f"Error absoluto medio (MAE): {mae}")
+
+error_porcentual = np.zeros(len(y_pred))
+
+y_valid = y_valid.to_numpy()  
+
+for i in range(1, len(y_pred)):
+
+    dif = y_pred[i] / y_valid[i]
+    if dif <= 1:
+        error_porcentual[i] = (1 - dif) 
+    else:
+        error_porcentual[i] = (dif - 1)
+
+mean_porcentual_error = np.mean(error_porcentual)
+
+print(f"Error porcentual medio: {mean_porcentual_error}")
+
+
+# 7. Guardar resultados en un archivo CSV
+
+# Crear un DataFrame con los valores reales y predichos
+df_resultados = pd.DataFrame({'y_valid': y_valid, 'y_pred': y_pred})
+
+print(f"La media de precio de los pisos es de {y_pred.mean()}")
+
+# Guardar en un archivo CSV
+df_resultados.to_csv(r'6.0 XGBoost primero con CSV sin añadir nada ni tocar nada\Mresultados_xgboost_60per_NO_CATASQUAL.csv', index=False)
+
+print("Archivo 'resultados_xgboost.csv' generado correctamente.")
+
+
+# 8. Guardar el modelo en un archivo
+# Guardar el modelo en un archivo
+joblib.dump(model, r"6.0 XGBoost primero con CSV sin añadir nada ni tocar nada\Mmodelo_xgboost_60per_NO_CATASQUAL.pkl")
+
+
+
+
+================================================
+FILE: 6.0 XGBoost primero con CSV sin añadir nada ni tocar nada/1_xgboost_primer_uso_para ver.py
+================================================
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+import xgboost as xgb
+from sklearn.metrics import mean_absolute_error
+import joblib
+
+print("Modelo guardado correctamente.")
+
+# 1. Cargar los datos
+data = pd.read_csv("Madrid_Sale.csv")  # Cambia "datos.csv" por la ruta real
+
+data = data.drop(columns=['ASSETID', 'PERIOD', 'UNITPRICE', 'CONSTRUCTIONYEAR', 'geometry'])
+
+
+# 2. Preprocesamiento
+# Rellenar valores nulos con 0
+data.fillna(0, inplace=True)
+
+
+
+# Convertir variables categóricas en dummies
+data = pd.get_dummies(data, drop_first=True)
+
+# 3. Definir variables predictoras y objetivo
+X = data.drop(columns=["PRICE"])  # Todas menos PRICE
+y = data["PRICE"]
+
+
+# 4. Dividir en entrenamiento y validación (80%-20%)
+X_sample, _, y_sample, _ = train_test_split(X, y, test_size=0.9, random_state=35)  # Quedarse con el 50% de los datos por sencillez
+X_train, X_valid, y_train, y_valid = train_test_split(X_sample, y_sample, test_size=0.2, random_state=42)
+
+
+"""
+print(X_train.isna().sum())
+print(y_train.isna().sum())
+
+
+"""
+
+# 5. Entrenar XGBoost con valores por defecto
+model = xgb.XGBRegressor(objective="reg:squarederror", random_state=42)
+model.fit(X_train, y_train)
+
+# 6. Predicción y evaluación
+y_pred = model.predict(X_valid)
+mae = mean_absolute_error(y_valid, y_pred)
+print(f"Error absoluto medio (MAE): {mae}")
+
+
+# 7. Guardar resultados en un archivo CSV
+
+# Crear un DataFrame con los valores reales y predichos
+df_resultados = pd.DataFrame({'y_valid': y_valid, 'y_pred': y_pred})
+
+print(y_pred.mean())
+
+# Guardar en un archivo CSV
+df_resultados.to_csv('resultados_xgboost.csv', index=False)
+
+print("Archivo 'resultados_xgboost.csv' generado correctamente.")
+
+
+# 8. Guardar el modelo en un archivo
+# Guardar el modelo en un archivo
+joblib.dump(model, "modelo_xgboost.pkl")
+
+
+
+
+================================================
+FILE: 6.0 XGBoost primero con CSV sin añadir nada ni tocar nada/Mmodelo_xgboost_60per_NO_CATASQUAL.pkl
+================================================
+[Non-text file]
+
+
+================================================
+FILE: 6.0 XGBoost primero con CSV sin añadir nada ni tocar nada/modelo_xgboost.pkl
+================================================
+[Non-text file]
+
+
+================================================
+FILE: 6.0 XGBoost primero con CSV sin añadir nada ni tocar nada/modelo_xgboost_50_perc.pkl
+================================================
+[Non-text file]
+
+
+================================================
+FILE: 6.0 XGBoost primero con CSV sin añadir nada ni tocar nada/modelo_xgboost_60per_NO_CATASQUAL.pkl
+================================================
+[Non-text file]
+
+
+================================================
+FILE: 6.0 XGBoost primero con CSV sin añadir nada ni tocar nada/probar_modelo_piso_aletor.py
+================================================
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+import xgboost as xgb
+from sklearn.metrics import mean_absolute_error
+import joblib
+
+
+# Cargar el modelo guardado
+modelo_cargado = joblib.load("modelo_xgboost_50_perc.pkl")
+
+# Crear un DataFrame con los datos de un solo piso (asegúrate de que tenga las mismas columnas que el modelo)
+piso_nuevo = pd.DataFrame({
+    "CONSTRUCTEDAREA": [83],
+    "ROOMNUMBER": [3],
+    "BATHNUMBER": [1],
+    "HASTERRACE": [1],
+    "HASLIFT": [0],
+    "HASAIRCONDITIONING": [0],
+    "AMENITYID": [2],  # Ajustar según los valores posibles
+    "HASPARKINGSPACE": [0],
+    "ISPARKINGSPACEINCLUDEDINPRICE": [0],
+    "PARKINGSPACEPRICE": [0],
+    "HASNORTHORIENTATION": [0],
+    "HASSOUTHORIENTATION": [0   ],
+    "HASEASTORIENTATION": [0],
+    "HASWESTORIENTATION": [1],
+    "HASBOXROOM": [0],
+    "HASWARDROBE": [0],
+    "HASSWIMMINGPOOL": [0],
+    "HASDOORMAN": [0],
+    "HASGARDEN": [0],
+    "ISDUPLEX": [0],
+    "ISSTUDIO": [0],
+    "ISINTOPFLOOR": [0],
+    "FLOORCLEAN": [1],  # Suponiendo que es el segundo piso
+    "FLATLOCATIONID": [1],  # Ajustar según el dataset
+    "CADCONSTRUCTIONYEAR": [1900],
+    "CADMAXBUILDINGFLOOR": [2],
+    "CADDWELLINGCOUNT": [5],
+    "CADASTRALQUALITYID": [4],
+    "BUILTTYPEID_1": [0],
+    "BUILTTYPEID_2": [0],
+    "BUILTTYPEID_3": [1],
+    "DISTANCE_TO_CITY_CENTER": [3.7],
+    "DISTANCE_TO_METRO": [0.3],
+    "DISTANCE_TO_CASTELLANA": [1.4],  # Distancia a una calle principal
+    "LONGITUDE": [-3.672122],  # Coordenadas de Madrid como ejemplo
+    "LATITUDE": [40.436377]
+
+    
+})
+
+
+
+# Hacer la predicción
+precio_predicho = modelo_cargado.predict(piso_nuevo)
+
+print(f"El precio predicho para el piso es: {precio_predicho[0]:,.2f} euros")
+
+
+
+================================================
+FILE: 6.0 XGBoost primero con CSV sin añadir nada ni tocar nada/probar_modelo_piso_aletor_NO_CATASQUAL.py
+================================================
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+import xgboost as xgb
+from sklearn.metrics import mean_absolute_error
+import joblib
+
+
+# Cargar el modelo guardado
+modelo_cargado = joblib.load("modelo_xgboost_60per_NO_CATASQUAL.pkl")
+
+# Crear un DataFrame con los datos de un solo piso (asegúrate de que tenga las mismas columnas que el modelo)
+piso_nuevo = pd.DataFrame({
+    "CONSTRUCTEDAREA": [83],
+    "ROOMNUMBER": [3],
+    "BATHNUMBER": [1],
+    "HASTERRACE": [1],
+    "HASLIFT": [0],
+    "HASAIRCONDITIONING": [0],
+    "AMENITYID": [2],  # Ajustar según los valores posibles
+    "HASPARKINGSPACE": [0],
+    "ISPARKINGSPACEINCLUDEDINPRICE": [0],
+    "PARKINGSPACEPRICE": [0],
+    "HASNORTHORIENTATION": [0],
+    "HASSOUTHORIENTATION": [0   ],
+    "HASEASTORIENTATION": [0],
+    "HASWESTORIENTATION": [1],
+    "HASBOXROOM": [0],
+    "HASWARDROBE": [0],
+    "HASSWIMMINGPOOL": [0],
+    "HASDOORMAN": [0],
+    "HASGARDEN": [0],
+    "ISDUPLEX": [0],
+    "ISSTUDIO": [0],
+    "ISINTOPFLOOR": [0],
+    "FLOORCLEAN": [1],  # Suponiendo que es el segundo piso
+    "FLATLOCATIONID": [1],  # Ajustar según el dataset
+    "CADCONSTRUCTIONYEAR": [1900],
+    "CADMAXBUILDINGFLOOR": [2],
+    "CADDWELLINGCOUNT": [5],
+    "BUILTTYPEID_1": [0],
+    "BUILTTYPEID_2": [0],
+    "BUILTTYPEID_3": [1],
+    "DISTANCE_TO_CITY_CENTER": [3.7],
+    "DISTANCE_TO_METRO": [0.3],
+    "DISTANCE_TO_CASTELLANA": [1.4],  # Distancia a una calle principal
+    "LONGITUDE": [-3.672122],  # Coordenadas de Madrid como ejemplo
+    "LATITUDE": [40.436377]
+
+    
+})
+
+
+
+# Hacer la predicción
+precio_predicho = modelo_cargado.predict(piso_nuevo)
+
+print(f"El precio predicho para el piso es: {precio_predicho[0]:,.2f} euros")
+
+
+precio_con_inflacion = precio_predicho * 1.44  # Inflación calculada con datos de Idealista 
+# https://www.idealista.com/sala-de-prensa/informes-precio-vivienda/venta/madrid-comunidad/madrid-provincia/madrid/historico/
+
+
+print(f"El precio predicho para el piso es: {precio_con_inflacion[0]:,.2f} euros")
+
+
+================================================
+FILE: 6.5 XGBoost con Datos Filtrados/modelo_xgboost_60per_NO_CATASQUAL.pkl
+================================================
+[Non-text file]
+
+
+================================================
+FILE: 6.5 XGBoost con Datos Filtrados/xgboost_primero_sin_CADASTRA.py
+================================================
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+import xgboost as xgb
+from sklearn.metrics import mean_absolute_error
+import joblib
+import matplotlib.pyplot as plt
+
+
+print("Modelo guardado correctamente.")
+
+# 1. Cargar los datos
+data = pd.read_csv(r"6.5 XGBoost con Datos Filtrados\Dataset_Con_Filtrado_y_Cuadrículas.csv")
+
+data = data.drop(columns=['ASSETID', 'PERIOD', 'UNITPRICE', 'CONSTRUCTIONYEAR', 'CADASTRALQUALITYID', 'LONGITUDE', 'LATITUDE', 'geometry'])
+
+
+# 2. Preprocesamiento
+# Rellenar valores nulos con 0
+data.fillna(0, inplace=True)
+
+
+
+# Convertir variables categóricas en dummies
+data = pd.get_dummies(data, drop_first=True)
+
+# 3. Definir variables predictoras y objetivo
+X = data.drop(columns=["PRICE"])  # Todas menos PRICE
+y = data["PRICE"]
+
+
+# 4. Dividir en entrenamiento y validación (80%-20%)
+X_sample, _, y_sample, _ = train_test_split(X, y, test_size=0.5, random_state=70)  # Quedarse con el 50% de los datos por sencillez
+X_train, X_valid, y_train, y_valid = train_test_split(X_sample, y_sample, test_size=0.2, random_state=42)
+
+
+"""
+print(X_train.isna().sum())
+print(y_train.isna().sum())
+
+
+"""
+
+# 5. Entrenar XGBoost con valores por defecto
+model = xgb.XGBRegressor(objective="reg:squarederror", random_state=42)
+model.fit(X_train, y_train)
+
+# 6. Predicción y evaluación
+y_pred = model.predict(X_valid)
+mae = mean_absolute_error(y_valid, y_pred)
+print(f"Error absoluto medio (MAE): {mae}")
+
+error_porcentual = np.zeros(len(y_pred))
+
+y_valid = y_valid.to_numpy()  
+
+for i in range(0, len(y_pred)):
+
+    dif = y_pred[i] / y_valid[i]
+    if dif <= 1:
+        error_porcentual[i] = (1 - dif) 
+    else:
+        error_porcentual[i] = (dif - 1)
+
+mean_porcentual_error = np.mean(error_porcentual)
+
+print(f"Error porcentual medio: {mean_porcentual_error}")
+
+
+# 7. Guardar resultados en un archivo CSV
+
+# Crear un DataFrame con los valores reales y predichos
+df_resultados = pd.DataFrame({'y_valid': y_valid, 'y_pred': y_pred, 'error_porcentual': error_porcentual})
+df_resultados['error_porcentual'] = df_resultados['error_porcentual'] * 100  # Convertir a porcentaje
+
+print(f"La media de precio de los pisos es de {y_pred.mean()}")
+
+# Guardar en un archivo CSV
+df_resultados.to_csv(r'6.5 XGBoost con Datos Filtrados\resultados_xgboost_60per_NO_CATASQUAL.csv', index=False) 
+
+print("Archivo 'resultados_xgboost.csv' generado correctamente.")
+
+
+# 8. Guardar el modelo en un archivo
+# Guardar el modelo en un archivo
+joblib.dump(model, r"6.5 XGBoost con Datos Filtrados\modelo_xgboost_60per_NO_CATASQUAL.pkl")
+
+
+
+
+# 9. Análisis de los errores
+
+# Convertir X_valid a DataFrame si no lo es
+X_valid_df = pd.DataFrame(X_valid, columns=X.columns)
+
+# Crear un DataFrame con los valores reales, predichos y el error porcentual
+df_analisis = X_valid_df.copy()
+df_analisis['y_valid'] = y_valid  # Valores reales
+df_analisis['y_pred'] = y_pred  # Predicciones
+df_analisis['error_porcentual'] = error_porcentual * 100  # Error porcentual en porcentaje
+
+# Guardar el DataFrame en un archivo CSV para análisis posterior
+df_analisis.to_csv(r'6.5 XGBoost con Datos Filtrados\analisis_errores.csv', index=False)
+
+print("Archivo 'analisis_errores.csv' generado correctamente.")
+
+
+# 10. Aanlizar el peso de cada variable en el modelo
+
+# Obtener las importancias de las características
+importances = model.feature_importances_
+
+# Crear un DataFrame para visualizar las importancias
+feature_importances = pd.DataFrame({
+    'Feature': X.columns,
+    'Importance': importances
+}).sort_values(by='Importance', ascending=False)
+
+print(feature_importances)
+
+# Opcional: Guardar las importancias en un archivo CSV
+feature_importances.to_csv(r"6.5 XGBoost con Datos Filtrados\importancias_caracteristicas.csv", index=False)
+
+
+# 11. Graficar las importancias de las características 
+
+import shap
+
+# 11.1. Crear el explainer (usando TreeExplainer que es más eficiente para XGBoost)
+explainer = shap.TreeExplainer(model)
+
+# 11.2. Seleccionar un caso con error alto
+errores_altos = df_analisis[df_analisis['error_porcentual'] > 100]
+if len(errores_altos) == 0:
+    print("No hay casos con error > 100%. Probando con error > 50%...")
+    errores_altos = df_analisis[df_analisis['error_porcentual'] > 50]
+    
+indice_caso = errores_altos.index[0]  # Índice del primer caso con error alto
+
+# 11.3. Preparar los features del caso (manteniendo estructura original)
+caso_features = X_valid_df.loc[indice_caso:indice_caso]
+
+# 11.4. Calcular SHAP values y crear objeto Explanation
+shap_values = explainer(caso_features)  # Esto devuelve un objeto Explanation
+
+# 11.5. Visualización Waterfall plot CORRECTA
+plt.figure()
+shap.plots.waterfall(shap_values[0], max_display=25, show=False)
+plt.savefig(r'6.5 XGBoost con Datos Filtrados\waterfall_HighError.png', 
+            bbox_inches='tight', dpi=300)
+plt.close()
+
+
+
+
+================================================
+FILE: 7.0 TensorFlow sin añadir nada/cuarto_tensor_flow_TabNet
+================================================
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, RobustScaler
+from sklearn.metrics import mean_absolute_error
+import tensorflow as tf
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
+import matplotlib.pyplot as plt
+
+# TabNet implementation using TensorFlow (simplified version)
+class TabNet(tf.keras.Model):
+    def __init__(
+        self,
+        feature_columns,
+        num_decision_steps=5,
+        feature_dim=64,
+        output_dim=1,
+        relaxation_factor=1.5,
+        bn_momentum=0.7,
+    ):
+        super(TabNet, self).__init__()
+        self.feature_columns = feature_columns
+        self.num_decision_steps = num_decision_steps
+        self.feature_dim = feature_dim
+        self.relaxation_factor = relaxation_factor
+        self.output_dim = output_dim
+        self.bn_momentum = bn_momentum
+        
+        # Feature transformer - shared across decision steps
+        self.transform = tf.keras.Sequential([
+            tf.keras.layers.Dense(feature_dim * 2, use_bias=False),
+            tf.keras.layers.BatchNormalization(momentum=bn_momentum)
+        ])
+        
+        # First decision step - feature selection
+        self.decision_layers = []
+        for _ in range(num_decision_steps):
+            decision_layer = tf.keras.Sequential([
+                tf.keras.layers.Dense(feature_dim, activation='relu'),
+                tf.keras.layers.BatchNormalization(momentum=bn_momentum),
+                tf.keras.layers.Dense(len(feature_columns), activation='sigmoid')
+            ])
+            self.decision_layers.append(decision_layer)
+        
+        # Final output layer
+        self.output_layer = tf.keras.Sequential([
+            tf.keras.layers.Dense(feature_dim, activation='relu'),
+            tf.keras.layers.Dense(output_dim)
+        ])
+        
+        # Attentive transformer
+        self.attentive = tf.keras.Sequential([
+            tf.keras.layers.Dense(len(feature_columns), activation='sigmoid')
+        ])
+        
+    def call(self, inputs, training=False):
+        batch_size = tf.shape(inputs)[0]
+        
+        # Initialize attention and aggregated features
+        prior_scales = tf.ones((batch_size, len(self.feature_columns)))
+        aggregated = tf.zeros((batch_size, self.feature_dim))
+        
+        for step_idx in range(self.num_decision_steps):
+            # Apply attention mechanism
+            attention = self.attentive(prior_scales)
+            masked_features = inputs * attention
+            
+            # Feature transformation
+            features = self.transform(masked_features)
+            features, gates = tf.split(features, 2, axis=1)
+            features = tf.nn.relu(features)
+            gates = tf.nn.sigmoid(gates)
+            
+            # Apply gates
+            decision = features * gates
+            
+            # Update prior scales for the next step
+            decision_mask = self.decision_layers[step_idx](decision)
+            
+            # Relaxation factor for sparsity
+            prior_scales = prior_scales * (self.relaxation_factor - decision_mask)
+            
+            # Aggregate features
+            aggregated += decision
+        
+        # Final output
+        return self.output_layer(aggregated)
+
+# Load data
+df = pd.read_csv("Madrid_Sale.csv")
+
+# Numeric columns to normalize
+num_columns = ['CONSTRUCTEDAREA', 'ROOMNUMBER', 'BATHNUMBER', 'FLATLOCATIONID', 
+               'CADCONSTRUCTIONYEAR', 'CADMAXBUILDINGFLOOR', 'CADDWELLINGCOUNT', 
+               'DISTANCE_TO_CITY_CENTER', 'DISTANCE_TO_METRO', 'DISTANCE_TO_CASTELLANA']
+
+# Use RobustScaler for features (better with outliers)
+scaler = RobustScaler()
+df[num_columns] = scaler.fit_transform(df[num_columns])
+
+# Feature engineering (optional)
+# Create price per square meter in the area if needed
+# df['PRICE_PER_SQM'] = df['PRICE'] / df['CONSTRUCTEDAREA']
+
+# Prepare data
+X = pd.get_dummies(df.drop(columns=['ASSETID', 'PERIOD', 'UNITPRICE', 'CONSTRUCTIONYEAR', 'CADASTRALQUALITYID', 'geometry', 'PRICE']), drop_first=True)
+y = df['PRICE']
+
+# Use RobustScaler for target variable
+y_scaler = RobustScaler()
+y_scaled = y_scaler.fit_transform(y.values.reshape(-1, 1)).flatten()
+
+# Split into training and test sets
+X_train, X_test, y_train_scaled, y_test_scaled = train_test_split(X, y_scaled, test_size=0.2, random_state=42)
+
+# Create validation set
+X_train, X_val, y_train_scaled, y_val_scaled = train_test_split(X_train, y_train_scaled, test_size=0.15, random_state=42)
+
+# Convert to TensorFlow datasets
+batch_size = 256
+train_dataset = tf.data.Dataset.from_tensor_slices((X_train.values.astype(np.float32), 
+                                                   y_train_scaled.astype(np.float32))).batch(batch_size)
+val_dataset = tf.data.Dataset.from_tensor_slices((X_val.values.astype(np.float32), 
+                                                 y_val_scaled.astype(np.float32))).batch(batch_size)
+
+# Create TabNet model
+tabnet_model = TabNet(
+    feature_columns=X_train.columns,
+    num_decision_steps=5,  # Number of decision steps
+    feature_dim=64,        # Feature dimension
+    output_dim=1,          # Single output for regression
+    relaxation_factor=1.5, # For feature selection sparsity
+    bn_momentum=0.7        # BatchNorm momentum
+)
+
+# Configure optimizer with clipping
+optimizer = tf.keras.optimizers.Adam(learning_rate=0.001, clipnorm=1.0)
+
+# Compile model
+tabnet_model.compile(
+    optimizer=optimizer,
+    loss='mse',
+    metrics=['mae']
+)
+
+# Configure callbacks
+early_stopping = EarlyStopping(
+    monitor='val_loss',
+    patience=15,
+    restore_best_weights=True,
+    verbose=1
+)
+
+reduce_lr = ReduceLROnPlateau(
+    monitor='val_loss',
+    factor=0.5,
+    patience=5,
+    min_lr=0.00001,
+    verbose=1
+)
+
+# Train the model
+history = tabnet_model.fit(
+    train_dataset,
+    validation_data=val_dataset,
+    epochs=100,
+    callbacks=[early_stopping, reduce_lr],
+    verbose=1
+)
+
+# Evaluate the model
+# Convert test data to tensors
+X_test_tensor = tf.convert_to_tensor(X_test.values.astype(np.float32))
+y_pred_scaled = tabnet_model.predict(X_test_tensor)
+
+# Inverse transform predictions to original scale
+y_pred = y_scaler.inverse_transform(y_pred_scaled)
+y_test = y_scaler.inverse_transform(y_test_scaled.reshape(-1, 1))
+
+# Calculate MAE
+mae = mean_absolute_error(y_test, y_pred)
+print(f"Error Absoluto Medio (MAE): {mae}")
+
+# Save model
+tabnet_model.save_weights('tabnet_model_weights.weights.h5')
+
+# Visualize training history
+plt.figure(figsize=(12, 4))
+plt.subplot(1, 2, 1)
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+plt.title('Pérdida del modelo')
+plt.ylabel('Pérdida')
+plt.xlabel('Época')
+plt.legend(['Entrenamiento', 'Validación'], loc='upper right')
+
+plt.subplot(1, 2, 2)
+plt.plot(history.history['mae'])
+plt.plot(history.history['val_mae'])
+plt.title('MAE del modelo')
+plt.ylabel('MAE')
+plt.xlabel('Época')
+plt.legend(['Entrenamiento', 'Validación'], loc='upper right')
+
+plt.tight_layout()
+plt.savefig('tabnet_training_history.png')
+plt.show()
+
+
+================================================
+FILE: 7.0 TensorFlow sin añadir nada/modelo_backpropagation_neural_tf.keras
+================================================
+[Non-text file]
+
+
+================================================
+FILE: 7.0 TensorFlow sin añadir nada/modelo_neural_tf.keras
+================================================
+[Non-text file]
+
+
+================================================
+FILE: 7.0 TensorFlow sin añadir nada/primer_Tensor_Flow
+================================================
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.layers import Dropout
+from sklearn.preprocessing import StandardScaler
+
+
+from sklearn.metrics import mean_absolute_error
+
+# Cargar datos
+df = pd.read_csv("Madrid_Sale.csv")  # Cambia "datos.csv" por la ruta real
+
+num_columns = ['CONSTRUCTEDAREA', 'ROOMNUMBER', 'BATHNUMBER', 'FLATLOCATIONID', 
+               'CADCONSTRUCTIONYEAR', 'CADMAXBUILDINGFLOOR', 'CADDWELLINGCOUNT', 
+               'DISTANCE_TO_CITY_CENTER', 'DISTANCE_TO_METRO', 'DISTANCE_TO_CASTELLANA']
+
+scaler = StandardScaler()
+
+# Aplicar la normalización a las columnas numéricas
+df[num_columns] = scaler.fit_transform(df[num_columns])
+
+# Ver los primeros registros del DataFrame después de la normalización
+#print(df[num_columns].head())
+
+
+X = pd.get_dummies(df.drop(columns=['ASSETID', 'PERIOD', 'UNITPRICE', 'CONSTRUCTIONYEAR', 'CADASTRALQUALITYID' ,'geometry']), drop_first=True)  # Quitar 'Price' porque es la variable a predecir
+
+y = df['PRICE']  # Ahora predecimos el precio
+
+# Dividir en entrenamiento y prueba
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+
+
+# Construcción del modelo
+model = Sequential()
+model.add(Dense(units=64, activation='relu', input_dim=len(X_train.columns)))
+model.add(Dropout(0.3))  # Dropout del 30% en la primera capa
+model.add(Dense(units=32, activation='sigmoid'))
+model.add(Dropout(0.3))  # Dropout del 30% en la primera capa
+model.add(Dense(units=16, activation='relu'))
+model.add(Dropout(0.2))  # Dropout del 30% en la primera capa
+model.add(Dense(units=8, activation='relu'))
+model.add(Dense(units=1))  # Última capa con activación lineal (por defecto)
+
+early_stopping = EarlyStopping(monitor='mae', patience=10, restore_best_weights=True)
+
+
+# Compilar el modelo para regresión
+model.compile(loss='mean_squared_error', optimizer='adam', metrics=['mae'])
+
+# Entrenar el modelo
+model.fit(X_train, y_train, epochs=100, batch_size=16, callbacks=[early_stopping])
+
+
+# Evaluar el modelo
+y_pred = model.predict(X_test)
+mae = mean_absolute_error(y_test, y_pred)
+print(f"Error Absoluto Medio (MAE): {mae}")
+
+# Guardar modelo
+model.save('tfmodel.keras')
+
+
+
+================================================
+FILE: 7.0 TensorFlow sin añadir nada/quinto_tensor_flow_Backpropagation
+================================================
+import numpy as np
+import pandas as pd
+import tensorflow as tf
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+
+# Clase para implementar una red neuronal con backpropagation usando TensorFlow
+class NeuralNetworkTF:
+    def __init__(self, input_size, hidden_layers, output_size, learning_rate=0.001):
+        """
+        Inicializar red neuronal con backpropagation usando TensorFlow
+        
+        Args:
+            input_size: Número de características de entrada
+            hidden_layers: Lista con el número de neuronas por capa oculta
+            output_size: Número de neuronas de salida
+            learning_rate: Tasa de aprendizaje para actualización de pesos
+        """
+        self.input_size = input_size
+        self.hidden_layers = hidden_layers
+        self.output_size = output_size
+        self.learning_rate = learning_rate
+        self.model = self._build_model()
+        
+    def _build_model(self):
+        """Construir el modelo de red neuronal con TensorFlow"""
+        model = tf.keras.Sequential()
+        
+        # Capa de entrada
+        model.add(tf.keras.layers.Dense(self.hidden_layers[0], 
+                                        input_dim=self.input_size, 
+                                        activation='relu'))
+        
+        # Capas ocultas
+        for units in self.hidden_layers[1:]:
+            model.add(tf.keras.layers.Dense(units, activation='relu'))
+            
+        # Capa de salida
+        model.add(tf.keras.layers.Dense(self.output_size, activation='linear'))
+        
+        # Compilar el modelo
+        optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
+        model.compile(loss='mean_squared_error', optimizer=optimizer, metrics=['mae'])
+        
+        return model
+    
+    def fit(self, X_train, y_train, X_val=None, y_val=None, epochs=100, batch_size=32, verbose=1):
+        """
+        Entrenar la red neuronal (backpropagation se realiza automáticamente)
+        
+        Args:
+            X_train: Datos de entrenamiento
+            y_train: Etiquetas de entrenamiento
+            X_val: Datos de validación
+            y_val: Etiquetas de validación
+            epochs: Número de épocas de entrenamiento
+            batch_size: Tamaño del batch
+            verbose: Nivel de información durante el entrenamiento
+        
+        Returns:
+            Historial de entrenamiento
+        """
+        # Configurar callbacks
+        callbacks = [
+            tf.keras.callbacks.EarlyStopping(
+                monitor='val_loss' if X_val is not None else 'loss',
+                patience=10,
+                restore_best_weights=True
+            ),
+            tf.keras.callbacks.ReduceLROnPlateau(
+                monitor='val_loss' if X_val is not None else 'loss',
+                factor=0.5,
+                patience=5,
+                min_lr=0.00001
+            )
+        ]
+        
+        # Entrenar el modelo
+        history = self.model.fit(
+            X_train, y_train,
+            validation_data=(X_val, y_val) if X_val is not None else None,
+            epochs=epochs,
+            batch_size=batch_size,
+            callbacks=callbacks,
+            verbose=verbose
+        )
+        
+        return history
+    
+    def predict(self, X):
+        """Hacer predicciones con el modelo entrenado"""
+        return self.model.predict(X)
+    
+    def evaluate(self, X_test, y_test):
+        """Evaluar el modelo en datos de prueba"""
+        return self.model.evaluate(X_test, y_test)
+    
+    def save(self, filepath):
+        """Guardar el modelo"""
+        self.model.save(filepath)
+    
+    def load(self, filepath):
+        """Cargar un modelo guardado"""
+        self.model = tf.keras.models.load_model(filepath)
+        
+# Función para visualizar el historial de entrenamiento
+def plot_training_history(history):
+    """Visualizar el historial de entrenamiento"""
+    plt.figure(figsize=(12, 4))
+    
+    # Gráfico de pérdida
+    plt.subplot(1, 2, 1)
+    plt.plot(history.history['loss'], label='Train Loss')
+    if 'val_loss' in history.history:
+        plt.plot(history.history['val_loss'], label='Validation Loss')
+    plt.title('Pérdida durante el entrenamiento')
+    plt.xlabel('Época')
+    plt.ylabel('Pérdida')
+    plt.legend()
+    
+    # Gráfico de MAE
+    plt.subplot(1, 2, 2)
+    plt.plot(history.history['mae'], label='Train MAE')
+    if 'val_mae' in history.history:
+        plt.plot(history.history['val_mae'], label='Validation MAE')
+    plt.title('MAE durante el entrenamiento')
+    plt.xlabel('Época')
+    plt.ylabel('MAE')
+    plt.legend()
+    
+    plt.tight_layout()
+    plt.show()
+
+# Ejemplo de uso con datos inmobiliarios
+def ejemplo_inmobiliario():
+    # Cargar datos (sustituir por tu archivo)
+    df = pd.read_csv("Madrid_Sale.csv")
+    
+    # Preprocesamiento
+    num_columns = ['CONSTRUCTEDAREA', 'ROOMNUMBER', 'BATHNUMBER', 'FLATLOCATIONID', 
+                   'CADCONSTRUCTIONYEAR', 'CADMAXBUILDINGFLOOR', 'CADDWELLINGCOUNT', 
+                   'DISTANCE_TO_CITY_CENTER', 'DISTANCE_TO_METRO', 'DISTANCE_TO_CASTELLANA']
+    
+    # Normalizar características
+    scaler_X = StandardScaler()
+    df[num_columns] = scaler_X.fit_transform(df[num_columns])
+    
+    # Preparar datos
+    X = pd.get_dummies(df.drop(columns=['ASSETID', 'PERIOD', 'UNITPRICE', 'CONSTRUCTIONYEAR', 
+                                       'CADASTRALQUALITYID', 'geometry', 'PRICE']), 
+                      drop_first=True)
+    y = df['PRICE'].values.reshape(-1, 1)
+    
+    # Normalizar objetivo
+    scaler_y = StandardScaler()
+    y_scaled = scaler_y.fit_transform(y)
+    
+    # Dividir datos
+    X_train, X_test, y_train, y_test = train_test_split(X, y_scaled, test_size=0.2, random_state=42)
+    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.15, random_state=42)
+    
+    # Crear y entrenar la red neuronal
+    input_size = X_train.shape[1]
+    hidden_layers = [64, 32, 16]  # Tres capas ocultas
+    output_size = 1
+    
+    nn = NeuralNetworkTF(input_size, hidden_layers, output_size, learning_rate=0.001)
+    history = nn.fit(X_train, y_train, X_val, y_val, epochs=100, batch_size=64)
+    
+    # Visualizar entrenamiento
+    plot_training_history(history)
+    
+    # Evaluar en datos de prueba
+    y_pred = nn.predict(X_test)
+    
+    # Convertir predicciones a escala original
+    y_pred_original = scaler_y.inverse_transform(y_pred)
+    y_test_original = scaler_y.inverse_transform(y_test)
+    
+    # Calcular MAE en escala original
+    mae = np.mean(np.abs(y_pred_original - y_test_original))
+    print(f"Error Absoluto Medio (MAE): {mae}")
+    
+    # Guardar modelo
+    nn.save('modelo_backpropagation_neural_tf.keras')
+    
+    return nn
+
+# Si quieres ejecutar el ejemplo, descomenta la siguiente línea
+modelo = ejemplo_inmobiliario()
+
+
+================================================
+FILE: 7.0 TensorFlow sin añadir nada/segundo_tensor_flow_with_claude
+================================================
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout, BatchNormalization
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.regularizers import l2
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import mean_absolute_error
+
+# Cargar datos
+df = pd.read_csv("Madrid_Sale.csv")
+
+# Columnas numéricas para normalizar
+num_columns = ['CONSTRUCTEDAREA', 'ROOMNUMBER', 'BATHNUMBER', 'FLATLOCATIONID', 
+               'CADCONSTRUCTIONYEAR', 'CADMAXBUILDINGFLOOR', 'CADDWELLINGCOUNT', 
+               'DISTANCE_TO_CITY_CENTER', 'DISTANCE_TO_METRO', 'DISTANCE_TO_CASTELLANA']
+
+# Escalar las características numéricas
+scaler = StandardScaler()
+df[num_columns] = scaler.fit_transform(df[num_columns])
+
+# Feature engineering - Crear características adicionales
+# Puede descomentar estas líneas si tiene sentido para su dataset
+# df['AREA_PER_ROOM'] = df['CONSTRUCTEDAREA'] / df['ROOMNUMBER'].replace(0, 1)
+# df['BATH_PER_ROOM'] = df['BATHNUMBER'] / df['ROOMNUMBER'].replace(0, 1)
+
+# Preparar datos
+X = pd.get_dummies(df.drop(columns=['ASSETID', 'PERIOD', 'UNITPRICE', 'CONSTRUCTIONYEAR', 'CADASTRALQUALITYID', 'geometry', 'PRICE']), drop_first=True)
+y = df['PRICE']
+
+# Escalar la variable objetivo (crucial para redes neuronales con regresión)
+y_scaler = StandardScaler()
+y_scaled = y_scaler.fit_transform(y.values.reshape(-1, 1)).flatten()
+
+# Dividir en entrenamiento y prueba
+X_train, X_test, y_train_scaled, y_test_scaled = train_test_split(X, y_scaled, test_size=0.2, random_state=42)
+
+# Crear conjunto de validación
+X_train, X_val, y_train_scaled, y_val_scaled = train_test_split(X_train, y_train_scaled, test_size=0.15, random_state=42)
+
+# Construcción del modelo mejorado
+model = Sequential()
+# Capa de entrada - más neuronas
+model.add(Dense(units=256, activation='relu', kernel_regularizer=l2(0.001), input_dim=len(X_train.columns)))
+model.add(BatchNormalization())
+model.add(Dropout(0.3))
+
+# Capas ocultas
+model.add(Dense(units=128, activation='relu', kernel_regularizer=l2(0.001)))
+model.add(BatchNormalization())
+model.add(Dropout(0.3))
+
+model.add(Dense(units=64, activation='relu', kernel_regularizer=l2(0.001)))
+model.add(BatchNormalization())
+model.add(Dropout(0.3))
+
+model.add(Dense(units=32, activation='relu'))
+model.add(BatchNormalization())
+model.add(Dropout(0.2))
+
+# Capa de salida
+model.add(Dense(units=1))  # Salida lineal para regresión
+
+# Configurar optimizador con tasa de aprendizaje personalizada
+optimizer = Adam(learning_rate=0.001)
+
+# Configurar callbacks
+early_stopping = EarlyStopping(
+    monitor='val_loss',
+    patience=20,
+    restore_best_weights=True,
+    verbose=1
+)
+
+reduce_lr = ReduceLROnPlateau(
+    monitor='val_loss',
+    factor=0.2,
+    patience=5,
+    min_lr=0.00001,
+    verbose=1
+)
+
+# Compilar el modelo
+model.compile(loss='mean_squared_error', optimizer=optimizer, metrics=['mae'])
+
+# Entrenar el modelo
+history = model.fit(
+    X_train, y_train_scaled,
+    validation_data=(X_val, y_val_scaled),
+    epochs=300,
+    batch_size=32,
+    callbacks=[early_stopping, reduce_lr],
+    verbose=1
+)
+
+# Evaluar el modelo
+y_pred_scaled = model.predict(X_test)
+# Deshacer la escala para obtener predicciones en euros
+y_pred = y_scaler.inverse_transform(y_pred_scaled)
+y_test = y_scaler.inverse_transform(y_test_scaled.reshape(-1, 1))
+
+mae = mean_absolute_error(y_test, y_pred)
+print(f"Error Absoluto Medio (MAE): {mae}")
+
+# Guardar modelo
+model.save('tfmodel_improved.keras')
+
+# Visualizar el historial de entrenamiento
+import matplotlib.pyplot as plt
+
+plt.figure(figsize=(12, 4))
+plt.subplot(1, 2, 1)
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+plt.title('Pérdida del modelo')
+plt.ylabel('Pérdida')
+plt.xlabel('Época')
+plt.legend(['Entrenamiento', 'Validación'], loc='upper right')
+
+plt.subplot(1, 2, 2)
+plt.plot(history.history['mae'])
+plt.plot(history.history['val_mae'])
+plt.title('MAE del modelo')
+plt.ylabel('MAE')
+plt.xlabel('Época')
+plt.legend(['Entrenamiento', 'Validación'], loc='upper right')
+
+plt.tight_layout()
+plt.savefig('training_history.png')
+plt.show()
+
+
+
+================================================
+FILE: 7.0 TensorFlow sin añadir nada/tabnet_model_weights.weights.h5
+================================================
+[Non-text file]
+
+
+================================================
+FILE: 7.0 TensorFlow sin añadir nada/tercer_tensor_flow_with_claude
+================================================
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout, BatchNormalization
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
+from tensorflow.keras.optimizers import Adam
+from sklearn.preprocessing import StandardScaler, RobustScaler
+from sklearn.metrics import mean_absolute_error
+import numpy as np
+
+# Cargar datos
+df = pd.read_csv("Madrid_Sale.csv")
+
+# Columnas numéricas para normalizar
+num_columns = ['CONSTRUCTEDAREA', 'ROOMNUMBER', 'BATHNUMBER', 'FLATLOCATIONID', 
+               'CADCONSTRUCTIONYEAR', 'CADMAXBUILDINGFLOOR', 'CADDWELLINGCOUNT', 
+               'DISTANCE_TO_CITY_CENTER', 'DISTANCE_TO_METRO', 'DISTANCE_TO_CASTELLANA']
+
+# Usar RobustScaler para las características (mejor con outliers)
+scaler = RobustScaler()
+df[num_columns] = scaler.fit_transform(df[num_columns])
+
+# Preparar datos
+X = pd.get_dummies(df.drop(columns=['ASSETID', 'PERIOD', 'UNITPRICE', 'CONSTRUCTIONYEAR', 'CADASTRALQUALITYID', 'geometry', 'PRICE']), drop_first=True)
+y = df['PRICE']
+
+# Usar RobustScaler para la variable objetivo
+y_scaler = RobustScaler()
+y_scaled = y_scaler.fit_transform(y.values.reshape(-1, 1)).flatten()
+
+# Dividir en entrenamiento y prueba
+X_train, X_test, y_train_scaled, y_test_scaled = train_test_split(X, y_scaled, test_size=0.2, random_state=42)
+
+# Crear conjunto de validación
+X_train, X_val, y_train_scaled, y_val_scaled = train_test_split(X_train, y_train_scaled, test_size=0.15, random_state=42)
+
+# Construcción de un modelo más estable
+model = Sequential()
+# Capa de entrada - menos neuronas, sin regularización fuerte
+model.add(Dense(units=128, activation='relu', input_dim=len(X_train.columns)))
+model.add(BatchNormalization())
+model.add(Dropout(0.2))
+
+# Capas ocultas simples
+model.add(Dense(units=64, activation='relu'))
+model.add(BatchNormalization())
+model.add(Dropout(0.2))
+
+model.add(Dense(units=32, activation='relu'))
+model.add(BatchNormalization())
+model.add(Dropout(0.2))
+
+# Capa de salida
+model.add(Dense(units=1))
+
+# Configurar optimizador con tasa de aprendizaje más baja y clipping de gradientes
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras import backend as K
+
+optimizer = Adam(learning_rate=0.0005, clipnorm=1.0)  # Añadir clipping para estabilidad
+
+# Compilar el modelo
+model.compile(loss='mean_squared_error', optimizer=optimizer, metrics=['mae'])
+
+# Configurar callbacks
+early_stopping = EarlyStopping(
+    monitor='val_loss',
+    patience=20,
+    restore_best_weights=True,
+    verbose=1
+)
+
+reduce_lr = ReduceLROnPlateau(
+    monitor='val_loss',
+    factor=0.5,  # Reducción más gradual
+    patience=5,
+    min_lr=0.00001,
+    verbose=1
+)
+
+# Entrenar el modelo
+history = model.fit(
+    X_train, y_train_scaled,
+    validation_data=(X_val, y_val_scaled),
+    epochs=300,
+    batch_size=64,  # Batch size más grande para estabilidad
+    callbacks=[early_stopping, reduce_lr],
+    verbose=1
+)
+
+# Evaluar el modelo
+y_pred_scaled = model.predict(X_test)
+# Deshacer la escala para obtener predicciones en euros
+y_pred = y_scaler.inverse_transform(y_pred_scaled)
+y_test = y_scaler.inverse_transform(y_test_scaled.reshape(-1, 1))
+
+mae = mean_absolute_error(y_test, y_pred)
+print(f"Error Absoluto Medio (MAE): {mae}")
+
+# Guardar modelo
+model.save('tfmodel_stable.keras')
+
+
+================================================
+FILE: 7.0 TensorFlow sin añadir nada/tfmodel.keras
+================================================
+[Non-text file]
+
+
+================================================
+FILE: 7.0 TensorFlow sin añadir nada/tfmodel_improved.keras
+================================================
+[Non-text file]
+
+
+================================================
+FILE: 7.0 TensorFlow sin añadir nada/tfmodel_stable.keras
+================================================
+[Non-text file]
+
+
+================================================
+FILE: Base de Datos/Madrid_City_Center.txt
+================================================
+Latitud 40.41659
+Latitud -3.70379
+
+
+
+================================================
+FILE: Base de Datos/Madrid_POIS.rda
+================================================
+[Non-text file]
+
+
