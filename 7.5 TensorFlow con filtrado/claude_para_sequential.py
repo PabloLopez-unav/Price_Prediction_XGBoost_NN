@@ -301,10 +301,10 @@ if training_successful:
         modelo_estable.save_weights(r'C:\Users\costa\Desktop\TFG\7.5 TensorFlow con filtrado\modelo_estable.weights.h5')
         
         # Visualización
-        plt.figure(figsize=(12, 8))
+        plt.figure(figsize=(10, 5))
         
         # Gráfico 1: Pérdida durante entrenamiento
-        plt.subplot(2, 2, 1)
+        plt.subplot(1, 2, 1)
         plt.plot(history.history['loss'], label='Entrenamiento')
         plt.plot(history.history['val_loss'], label='Validación')
         plt.title('Pérdida del modelo')
@@ -314,7 +314,7 @@ if training_successful:
         plt.yscale('log')
         
         # Gráfico 2: MAE durante entrenamiento
-        plt.subplot(2, 2, 2)
+        plt.subplot(1, 2, 2)
         plt.plot(history.history['mae'], label='Entrenamiento')
         plt.plot(history.history['val_mae'], label='Validación')
         plt.title('MAE del modelo')
@@ -322,8 +322,16 @@ if training_successful:
         plt.xlabel('Época')
         plt.legend()
         
-        # Gráfico 3: Predicciones vs valores reales
-        plt.subplot(2, 2, 3)
+        plt.tight_layout()
+        plt.savefig(r'C:\Users\costa\Desktop\TFG\7.5 TensorFlow con filtrado\modelo_estable_analisis_ENTRENAMIENTO.png', dpi=300, bbox_inches='tight')
+        plt.show()
+
+
+        plt.figure(figsize=(10, 5))
+
+
+        # Gráfico 1: Predicciones vs valores reales
+        plt.subplot(1, 2, 1)
         plt.scatter(y_test_original, y_pred, alpha=0.5)
         plt.plot([y_test_original.min(), y_test_original.max()], 
                  [y_test_original.min(), y_test_original.max()], 'r--', lw=2)
@@ -331,8 +339,8 @@ if training_successful:
         plt.ylabel('Precio Predicho')
         plt.title(f'Predicciones vs Reales (R² = {r2:.3f})')
         
-        # Gráfico 4: Distribución de errores
-        plt.subplot(2, 2, 4)
+        # Gráfico 2: Distribución de errores
+        plt.subplot(1, 2, 2)
         errors = y_test_original.flatten() - y_pred.flatten()
         plt.hist(errors, bins=30, alpha=0.7)
         plt.xlabel('Error (Real - Predicho)')
@@ -340,9 +348,23 @@ if training_successful:
         plt.title('Distribución de Errores')
         
         plt.tight_layout()
-        plt.savefig(r'C:\Users\costa\Desktop\TFG\7.5 TensorFlow con filtrado\modelo_estable_analisis.png', dpi=300, bbox_inches='tight')
+        plt.savefig(r'C:\Users\costa\Desktop\TFG\7.5 TensorFlow con filtrado\modelo_estable_analisis_R2_Y_DIST.png', dpi=300, bbox_inches='tight')
         plt.show()
         
+        import seaborn as sns
+
+        # === Distribución de precios reales vs predichos ===
+        plt.figure(figsize=(8, 5))
+        sns.histplot(y_test_original.flatten(), color='orange', label='Precio Real', kde=True, stat="density", bins=30, alpha=0.6)
+        sns.histplot(y_pred.flatten(), color='blue', label='Precio Predicho', kde=True, stat="density", bins=30, alpha=0.6)
+
+        plt.xlabel('Precio')
+        plt.ylabel('Densidad')
+        plt.title('Distribución de Precios Reales vs Predichos')
+        plt.legend()
+        plt.savefig(r'C:\Users\costa\Desktop\TFG\7.5 TensorFlow con filtrado\distribucion_precios_reales_vs_predichos.png', dpi=300, bbox_inches='tight')
+        plt.show()
+
         print(f"\nModelo guardado exitosamente!")
         
     except Exception as e:

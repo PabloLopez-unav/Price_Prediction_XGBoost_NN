@@ -150,3 +150,46 @@ plt.savefig(r'6.5 XGBoost con Datos Filtrados\waterfall_HighError.png',
             bbox_inches='tight', dpi=300)
 plt.close()
 
+
+# === GRÁFICAS ADICIONALES DE EVALUACIÓN ===
+import seaborn as sns
+
+# Crear carpeta de guardado si fuera necesario
+import os
+output_dir = r"6.5 XGBoost con Datos Filtrados"
+os.makedirs(output_dir, exist_ok=True)
+
+plt.figure(figsize=(10, 5))
+
+# 1. Predicciones vs Reales
+plt.subplot(1, 2, 1)
+plt.scatter(y_valid, y_pred, alpha=0.4)
+plt.plot([y_valid.min(), y_valid.max()], [y_valid.min(), y_valid.max()], 'r--', lw=2)
+plt.xlabel('Precio Real')
+plt.ylabel('Precio Predicho')
+plt.title('Predicción vs Real')
+
+# 2. Histograma de errores (reales - predichos)
+plt.subplot(1, 2, 2)
+errores = y_valid - y_pred
+plt.hist(errores, bins=30, alpha=0.7)
+plt.xlabel('Error (Real - Predicho)')
+plt.ylabel('Frecuencia')
+plt.title('Distribución de Errores')
+
+
+plt.tight_layout()
+plt.savefig(os.path.join(output_dir, "analisis_graficas_xgboost.png"), dpi=300, bbox_inches='tight')
+plt.show()
+
+
+# === Distribución de precios reales vs predichos ===
+plt.figure(figsize=(8, 5))
+sns.histplot(y_valid, color='orange', label='Precio Real', kde=True, stat="density", bins=30, alpha=0.6)
+sns.histplot(y_pred, color='blue', label='Precio Predicho', kde=True, stat="density", bins=30, alpha=0.6)
+plt.xlabel('Precio')
+plt.ylabel('Densidad')
+plt.title('Distribución de Precios Reales vs Predichos')
+plt.legend()
+plt.savefig(os.path.join(output_dir, "distribucion_precios_reales_vs_predichos.png"), dpi=300, bbox_inches='tight')
+plt.show()
