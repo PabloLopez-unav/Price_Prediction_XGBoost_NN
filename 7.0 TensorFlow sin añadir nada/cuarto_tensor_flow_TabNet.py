@@ -87,7 +87,7 @@ class TabNet(tf.keras.Model):
         return self.output_layer(aggregated)
 
 # Load data
-df = pd.read_csv("Madrid_Sale.csv")
+df = pd.read_csv(r"C:\Users\costa\Desktop\TFG\7.0 TensorFlow sin añadir nada\Madrid_Sale.csv")
 
 # Numeric columns to normalize
 num_columns = ['CONSTRUCTEDAREA', 'ROOMNUMBER', 'BATHNUMBER', 'FLATLOCATIONID', 
