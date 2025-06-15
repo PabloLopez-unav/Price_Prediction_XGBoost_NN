@@ -290,12 +290,16 @@ if training_successful:
         for i in range(min(10, len(y_test_original))):
             print(f"Real: {y_test_original[i,0]:,.2f}, Predicho: {y_pred[i,0]:,.2f}, Diferencia: {abs(y_test_original[i,0] - y_pred[i,0]):,.2f}")
         
-        # Guardar resultados
-        resultados_df = pd.DataFrame({
-            'Precio_real': y_test_original.flatten(),
-            'Precio_predicho': y_pred.flatten(),
-            'Error_absoluto': abs(y_test_original.flatten() - y_pred.flatten())
-        })
+        # Guardar resultados (ahora conservamos el índice original de X_test)
+        resultados_df = pd.DataFrame(
+            {
+                'Precio_real': y_test_original.flatten(),
+                'Precio_predicho': y_pred.flatten(),
+                'Error_absoluto': np.abs(y_test_original.flatten() - y_pred.flatten())
+            },
+            index=X_test_scaled.index          #  <-- línea clave
+        )
+
         
         resultados_df.to_csv(r"C:\Users\costa\Desktop\TFG\7.5 TensorFlow con filtrado\resultados_modelo_estable.csv", index=False)
         modelo_estable.save_weights(r'C:\Users\costa\Desktop\TFG\7.5 TensorFlow con filtrado\modelo_estable.weights.h5')
@@ -324,7 +328,7 @@ if training_successful:
         
         plt.tight_layout()
         plt.savefig(r'C:\Users\costa\Desktop\TFG\7.5 TensorFlow con filtrado\modelo_estable_analisis_ENTRENAMIENTO.png', dpi=300, bbox_inches='tight')
-        plt.show()
+        #plt.show()
 
 
         plt.figure(figsize=(10, 5))
@@ -349,21 +353,21 @@ if training_successful:
         
         plt.tight_layout()
         plt.savefig(r'C:\Users\costa\Desktop\TFG\7.5 TensorFlow con filtrado\modelo_estable_analisis_R2_Y_DIST.png', dpi=300, bbox_inches='tight')
-        plt.show()
+        #plt.show()
         
         import seaborn as sns
 
         # === Distribución de precios reales vs predichos ===
         plt.figure(figsize=(8, 5))
         sns.histplot(y_test_original.flatten(), color='orange', label='Precio Real', kde=True, stat="density", bins=30, alpha=0.6)
-        sns.histplot(y_pred.flatten(), color='blue', label='Precio Predicho', kde=True, stat="density", bins=30, alpha=0.6)
+        sns.histplot(y_pred.flatten(), color='orange', label='Precio Predicho', kde=True, stat="density", bins=30, alpha=0.6)
 
         plt.xlabel('Precio')
         plt.ylabel('Densidad')
         plt.title('Distribución de Precios Reales vs Predichos')
         plt.legend()
         plt.savefig(r'C:\Users\costa\Desktop\TFG\7.5 TensorFlow con filtrado\distribucion_precios_reales_vs_predichos.png', dpi=300, bbox_inches='tight')
-        plt.show()
+        #plt.show()
 
         print(f"\nModelo guardado exitosamente!")
         
@@ -400,3 +404,82 @@ else:
         print("El problema está en los datos de entrada.")
 
 print(f"\n=== DIAGNÓSTICO COMPLETADO ===")
+
+# === SHAP WATERFALL PARA UN SOLO CASO =======================================
+# Requiere: modelo_estable entrenado, X_train_array, X_test_scaled, resultados_df
+
+import shap
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from pathlib import Path
+
+# ---------------------------------------------------------------------------
+# 1. Calcular el error porcentual de cada predicción del test
+# ---------------------------------------------------------------------------
+resultados_df["error_pct"] = (
+    np.abs(resultados_df["Precio_real"] - resultados_df["Precio_predicho"])
+    / resultados_df["Precio_real"]
+) * 100
+
+# ---------------------------------------------------------------------------
+# 2. Elegir el primer caso con error alto (>100 %, o >50 % si no hay)
+# ---------------------------------------------------------------------------
+errores_altos = resultados_df[resultados_df["error_pct"] > 100]
+if errores_altos.empty:
+    errores_altos = resultados_df[resultados_df["error_pct"] > 50]
+
+indice_caso = errores_altos.index[0]          # índice del caso elegido
+caso_scaled  = X_test_scaled.loc[[indice_caso]]   # DataFrame de UNA fila
+
+# ---------------------------------------------------------------------------
+# 3. Crear el explainer (usa automáticamente Deep/Gradient para Keras)
+#    -> se toma una muestra pequeña de entrenamiento como background
+# ---------------------------------------------------------------------------
+np.random.seed(42)
+background_idx = np.random.choice(len(X_train_array), size=100, replace=False)
+explainer = shap.Explainer(
+    modelo_estable.predict,           # función predict del modelo
+    X_train_array[background_idx]     # background en formato np.array
+)
+
+# ---------------------------------------------------------------------------
+# 4. Obtener SHAP values del caso y graficar waterfall
+# ---------------------------------------------------------------------------
+shap_values = explainer(caso_scaled)     # shap.Explanation
+sv_row = shap_values[0]                  # contribuciones de esa fila
+
+# Carpeta de salida
+out_dir = Path(r"C:\Users\costa\Desktop\TFG\7.5 TensorFlow con filtrado")
+out_dir.mkdir(parents=True, exist_ok=True)
+
+# 4.1. Waterfall plot --------------------------------------------------------
+plt.figure()
+shap.plots.waterfall(sv_row, max_display=25, show=False)
+plt.savefig(out_dir / "waterfall_high_NONO_error_NN.png",
+            dpi=300, bbox_inches="tight")
+plt.close()
+
+# ---------------------------------------------------------------------------
+# 4-bis. Convertir contribuciones y valor base a EUROS
+# ---------------------------------------------------------------------------
+target_scale  = scaler_y.scale_[0]     # IQR del precio
+target_median = scaler_y.center_[0]    # mediana del precio
+
+sv_row_eur = shap.Explanation(
+    values      = sv_row.values * target_scale,            # contribuciones € 
+    base_values = sv_row.base_values * target_scale + target_median,  # valor base €
+    data        = sv_row.data,
+    feature_names = sv_row.feature_names
+)
+
+# 4.1. Waterfall plot (ahora en €) ------------------------------------------
+plt.figure()
+shap.plots.waterfall(sv_row_eur, max_display=25, show=False)
+plt.savefig(out_dir / "waterfall_high_error_NN.png",
+            dpi=300, bbox_inches="tight")
+plt.close()
+
+
+print("\n=== CONTRIBUCIONES SHAP – CASO DE ERROR ALTO ===")
+

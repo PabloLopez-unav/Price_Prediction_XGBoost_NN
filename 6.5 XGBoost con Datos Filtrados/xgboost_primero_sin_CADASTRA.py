@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 import xgboost as xgb
-from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import mean_absolute_error, r2_score
 import joblib
 import matplotlib.pyplot as plt
 
@@ -159,6 +159,8 @@ import os
 output_dir = r"6.5 XGBoost con Datos Filtrados"
 os.makedirs(output_dir, exist_ok=True)
 
+r2 = r2_score(y_valid, y_pred)
+
 plt.figure(figsize=(10, 5))
 
 # 1. Predicciones vs Reales
@@ -167,7 +169,7 @@ plt.scatter(y_valid, y_pred, alpha=0.4)
 plt.plot([y_valid.min(), y_valid.max()], [y_valid.min(), y_valid.max()], 'r--', lw=2)
 plt.xlabel('Precio Real')
 plt.ylabel('Precio Predicho')
-plt.title('Predicción vs Real')
+plt.title(f'Predicciones vs Reales (R² = {r2:.3f})')
 
 # 2. Histograma de errores (reales - predichos)
 plt.subplot(1, 2, 2)
