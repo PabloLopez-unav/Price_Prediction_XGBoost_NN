@@ -192,7 +192,7 @@ optimizer = tf.keras.optimizers.Adam(
     clipnorm=1.0  # Gradient clipping importante
 )
 
-# Compilar con MSE simple (más estable que Huber inicialmente)
+# Compilar con MSE simple 
 modelo_estable.compile(
     optimizer=optimizer,
     loss='mse',
@@ -202,7 +202,7 @@ modelo_estable.compile(
 print(modelo_estable.summary())
 
 print(f"\n=== ENTRENAMIENTO ===")
-# ------------------------ ENTRENAMIENTO MÁS CONSERVADOR ------------------------
+# ------------------------ ENTRENAMIENTO ------------------------
 
 # Callbacks muy conservadores
 early_stopping = EarlyStopping(
