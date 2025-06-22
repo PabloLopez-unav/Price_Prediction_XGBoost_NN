@@ -1,0 +1,119 @@
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+import xgboost as xgb
+from sklearn.metrics import mean_absolute_error
+import joblib
+
+
+# Cargar el modelo guardado
+modelo_cargado = joblib.load(r"C:\Users\costa\Desktop\TFG\9.0 XGBoost 5 pisos reales\modelo_xgboost_final_NO_CATASQUAL.pkl")
+
+
+# Cargar el CSV
+df = pd.read_csv(r"C:\Users\costa\Desktop\TFG\9.0 XGBoost 5 pisos reales\Dataset_Con_Filtrado_y_Cuadrículas.csv") 
+
+
+# Filtrar por los ASSETID deseados
+asset_ids = [
+    'A780752105476887286',
+    'A9913171220255804177',
+    'A15378954940238110703',
+    'A5102506203930200985',
+    'A13756852451347714092'
+]
+df_filtrado = df[df['ASSETID'].isin(asset_ids)]
+
+
+# Añadir una fila con los datos de la que falta
+nueva_fila = {
+    'ASSETID': 'A13756852451347714092',
+    'PERIOD': 201812,
+    'PRICE': 493000,
+    'UNITPRICE': 3763.358779,
+    'CONSTRUCTEDAREA': 131,
+    'ROOMNUMBER': 3,
+    'BATHNUMBER': 2,
+    'HASTERRACE': 1,
+    'HASLIFT': 1,
+    'HASAIRCONDITIONING': 0,
+    'AMENITYID': 3,
+    'HASPARKINGSPACE': 1,
+    'ISPARKINGSPACEINCLUDEDINPRICE': 1,
+    'PARKINGSPACEPRICE': 1,
+    'HASNORTHORIENTATION': 0,
+    'HASSOUTHORIENTATION': 0,
+    'HASEASTORIENTATION': 0,
+    'HASWESTORIENTATION': 0,
+    'HASBOXROOM': 1,
+    'HASWARDROBE': 0,
+    'HASSWIMMINGPOOL': 1,
+    'HASDOORMAN': 0,
+    'HASGARDEN': 1,  
+    'ISDUPLEX': 0,
+    'ISSTUDIO': 0,
+    'ISINTOPFLOOR': 0,
+    'CONSTRUCTIONYEAR': np.nan,       
+    'FLOORCLEAN': 0,             
+    'FLATLOCATIONID': 1,         
+    'CADCONSTRUCTIONYEAR': 2017,
+    'CADMAXBUILDINGFLOOR': 9,
+    'CADDWELLINGCOUNT': 201,
+    'CADASTRALQUALITYID': 4,
+    'BUILTTYPEID_1': 1,
+    'BUILTTYPEID_2': 0,
+    'BUILTTYPEID_3': 0,
+    'DISTANCE_TO_CITY_CENTER': 10.91195893,
+    'DISTANCE_TO_METRO': 1.895839297,
+    'DISTANCE_TO_CASTELLANA': 5.911346155,
+    'LONGITUDE': -3.614963562,
+    'LATITUDE': 40.48758252,
+    'geometry': '[-3.61496356 40.48758252]',
+    'lon_normalized': 56.39,
+    'lat_normalized': 54.97,
+    'Zona_Cuadricula': 3297
+}
+
+cols = df_filtrado.columns.tolist()
+
+
+# 2) Lo convertimos en DataFrame de una fila
+fila_df = pd.DataFrame([nueva_fila], columns=cols)
+
+# 3) Concatenamos
+df_filtrado = pd.concat([df_filtrado, fila_df], ignore_index=True)
+
+# Calculamos para cada ASSETID el índice de la fila con PRICE mínimo
+idx_precio_min = df_filtrado.groupby('ASSETID')['PRICE'].idxmin()
+
+# Seleccionamos esas filas y reindexamos
+df_unicos = df_filtrado.loc[idx_precio_min].reset_index(drop=True)
+
+df_unicos.to_csv(r"C:\Users\costa\Desktop\TFG\9.0 XGBoost 5 pisos reales\Dataset_filtrado.csv", index=False)
+
+# Lista de las columnas que quieres conservar
+columns = [
+    "CONSTRUCTEDAREA", "ROOMNUMBER", "BATHNUMBER", "HASTERRACE", "HASLIFT",
+    "HASAIRCONDITIONING", "AMENITYID", "HASPARKINGSPACE",
+    "ISPARKINGSPACEINCLUDEDINPRICE", "PARKINGSPACEPRICE", "HASNORTHORIENTATION",
+    "HASSOUTHORIENTATION", "HASEASTORIENTATION", "HASWESTORIENTATION",
+    "HASBOXROOM", "HASWARDROBE", "HASSWIMMINGPOOL", "HASDOORMAN", "HASGARDEN",
+    "ISDUPLEX", "ISSTUDIO", "ISINTOPFLOOR", "FLOORCLEAN", "FLATLOCATIONID",
+    "CADCONSTRUCTIONYEAR", "CADMAXBUILDINGFLOOR", "CADDWELLINGCOUNT",
+    "BUILTTYPEID_1", "BUILTTYPEID_2", "BUILTTYPEID_3", "DISTANCE_TO_CITY_CENTER",
+    "DISTANCE_TO_METRO", "DISTANCE_TO_CASTELLANA", 'lon_normalized', 'lat_normalized', 'Zona_Cuadricula'
+]
+
+
+
+# Seleccionar únicamente esas columnas en el DataFrame
+df_final = df_unicos[columns]
+
+#Guardar el DataFrame filtrado en un nuevo CSV
+
+
+# Hacer la predicción
+precios_predichos = modelo_cargado.predict(df_final)
+
+print(precios_predichos)
+
