@@ -5,14 +5,20 @@ import squarify  # para treemap
 # Datos
 data = {
     'Feature': [
-        'CONSTRUCTEDAREA', 'Zona_Cuadricula', 'BUILTTYPEID_3', 'HASLIFT', 'DISTANCE_TO_CASTELLANA',
-        'BATHNUMBER', 'SWIMMINGPOOL', 'lat_normalized', 'DIST_CITY_CENTER', 'BUILTTYPEID_1',
-        'lon_normalized', 'AC AA', 'BUILTTYPEID_2', 'DOORMAN', 'PARKING SPACE',
-        'FLOORCLEAN', 'ROOM NUM', 'REST of 14 VARIABLES (7.4%)'
+        'CONSTRUCTEDAREA', 'Zona_Cuadricula', 'HASLIFT', 'BATHNUMBER',
+        'DIST_CASTELLANA', 'SWIMMINGPOOL', 'lat_normalized',
+        'DIST_CITY_CENTER', 'lon_normalized', 'BUILTTYPEID_1',
+        'BUILTTYPEID_2', 'AC/AA', 'PARKINGSPACE',
+        'FLOORCLEAN', 'DOORMAN', 'WARDROBE', 'DUPLEX',
+        'FLOORS', 'FLAT LOC', 'ROOMS',
+        'REST of 16 VARIABLES (6.69%)'      # suma de las 14 importancias más bajas
     ],
     'Importance': [
-        0.288333, 0.082039, 0.072755, 0.070262, 0.065788, 0.064307, 0.050757, 0.045587, 0.032205,
-        0.029080, 0.027149, 0.019754, 0.018715, 0.015273, 0.014078, 0.012388, 0.009758, 0.074447
+        0.307139, 0.087857, 0.080460, 0.076665, 0.073946,
+        0.047019, 0.037968, 0.034546, 0.029475, 0.025765,
+        0.023280, 0.021241, 0.018486, 0.014430, 0.012524,
+        0.008997, 0.008944, 0.008277, 0.008180, 0.007895,
+        0.066905
     ]
 }
 
@@ -27,7 +33,7 @@ squarify.plot(
     sizes=df['Importance'],
     label=df['Feature'],
     alpha=0.8,
-    text_kwargs={'fontsize': 19},
+    text_kwargs={'fontsize': 16.5},
     color=['#FF9999', '#FFCC99', '#FFFF99', '#CCFF99', '#99FF99', '#99FFFF', '#9999FF', '#CC99FF', '#FF99CC'] * 4
     + ['#FF9999', '#FFCC99', '#FFFF99', '#CCFF99', '#99FF99', '#99FFFF', '#9999FF', '#CC99FF', '#FF99CC'][:len(df) - 36]
 )

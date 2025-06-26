@@ -5,12 +5,27 @@ import xgboost as xgb
 from sklearn.metrics import mean_absolute_error, r2_score
 import joblib
 import matplotlib.pyplot as plt
+from matplotlib.ticker import ScalarFormatter
 
 
 print("Modelo guardado correctamente.")
 
 # 1. Cargar los datos
 data = pd.read_csv(r"6.5 XGBoost con Datos Filtrados\Dataset_Con_Filtrado_y_Cuadrículas.csv")
+
+
+# ELIMINO PARA LUEGO TESTARLO CON ESTAS COLUMNAS
+asset_ids = [
+    'A780752105476887286',
+    'A9913171220255804177',
+    'A15378954940238110703',
+    'A5102506203930200985',
+    'A13756852451347714092'
+]
+
+# Quedarse con las filas cuyo ASSETID NO esté en asset_ids
+data = data[~data['ASSETID'].isin(asset_ids)]
+
 
 data = data.drop(columns=['ASSETID', 'PERIOD', 'UNITPRICE', 'CONSTRUCTIONYEAR', 'CADASTRALQUALITYID', 'LONGITUDE', 'LATITUDE', 'geometry'])
 
@@ -130,13 +145,12 @@ import shap
 explainer = shap.TreeExplainer(model)
 
 # 11.2. Seleccionar un caso con error alto
-errores_altos = df_analisis[df_analisis['error_porcentual'] > 100]
+errores_altos = df_analisis[df_analisis['error_porcentual'] < 10]
 if len(errores_altos) == 0:
     print("No hay casos con error > 100%. Probando con error > 50%...")
     errores_altos = df_analisis[df_analisis['error_porcentual'] > 50]
     
-indice_caso = errores_altos.index[0]  # Índice del primer caso con error alto
-
+indice_caso = errores_altos.index[1]
 # 11.3. Preparar los features del caso (manteniendo estructura original)
 caso_features = X_valid_df.loc[indice_caso:indice_caso]
 
@@ -179,11 +193,17 @@ plt.xlabel('Error (Real - Predicho)')
 plt.ylabel('Frecuencia')
 plt.title('Distribución de Errores')
 
+ax = plt.gca()
+formatter = ScalarFormatter(useMathText=True)   # usa “1×10^6”
+formatter.set_powerlimits((6, 6))               # siempre 10^6
+ax.xaxis.set_major_formatter(formatter)
+ax.ticklabel_format(axis='x', style='sci')      # muestra en científica
 
 plt.tight_layout()
 plt.savefig(os.path.join(output_dir, "analisis_graficas_xgboost.png"), dpi=300, bbox_inches='tight')
 plt.show()
-
+plt.close()
+#
 
 # === Distribución de precios reales vs predichos ===
 plt.figure(figsize=(8, 5))
@@ -194,4 +214,6 @@ plt.ylabel('Densidad')
 plt.title('Distribución de Precios Reales vs Predichos')
 plt.legend()
 plt.savefig(os.path.join(output_dir, "distribucion_precios_reales_vs_predichos.png"), dpi=300, bbox_inches='tight')
-plt.show()
+#plt.show()
+plt.close()
+
